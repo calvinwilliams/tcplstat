@@ -471,7 +471,7 @@ convey the exclusion of warranty; and each file should have at least the
 "copyright" line and a pointer to where the full notice is found.
 
     {description}
-    Copyright (C) 2018 calvinwilliams
+    Copyright (C) 2017 calvinwilliams
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -500,3 +500,4 @@ necessary.  Here is a sample; alter the names:
   Ty Coon, President of Vice
 
 That's all there is to it!
+
