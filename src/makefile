@@ -11,10 +11,12 @@ c_FILE		=	\
 			list.c \
 			rbtree.c \
 			rbtree_ins.c \
+			Util.c \
 			main.c \
 			PcapCallback.c \
 			ProcessTcpPacket.c \
-			Util.c \
+			AddTcpPacket.c \
+			DumpTcplSession.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall

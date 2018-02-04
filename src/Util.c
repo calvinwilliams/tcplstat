@@ -20,10 +20,13 @@ char *memndup( const char *s, size_t n )
 	return p;
 }
 
-int DumpBuffer( char *pathfilename , int buf_len , void *buf )
+int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf )
 {
-	FILE	*fp = NULL ;
-	int	lines_offset , bytes_offset ;
+	FILE		*fp = NULL ;
+	int		lines_offset , bytes_offset ;
+	
+	if( indentation == NULL )
+		indentation = "" ;
 	
 	if( STRCMP( pathfilename , == , "#stdin" ) )
 	{
@@ -47,22 +50,19 @@ int DumpBuffer( char *pathfilename , int buf_len , void *buf )
 	}
 	
 	/* –¥»’÷æ */
-	
-	fprintf( fp , "             0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F    0123456789ABCDEF\n" );
+	fprintf( fp , "%s             0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F    0123456789ABCDEF\n" , indentation );
 	
 	lines_offset = 0 ;
 	bytes_offset = 0 ;
 	
 	while(1)
 	{
-		fprintf( fp , "0x%08X   " , (unsigned int)(lines_offset*16) );
+		fprintf( fp , "%s0x%08X   " , indentation , (unsigned int)(lines_offset*16) );
 		
 		for( bytes_offset = 0 ; bytes_offset < 16 ; bytes_offset++ )
 		{
-			unsigned char		ch = *( (unsigned char *)buf + lines_offset * 16 + bytes_offset ) ;
-			
 			if( lines_offset*16 + bytes_offset < buf_len )
-				fprintf( fp , "%02X " , ch );
+				fprintf( fp , "%02X " , *( (unsigned char *)buf + lines_offset * 16 + bytes_offset ) );
 			else
 				fprintf( fp , "   " );
 		}

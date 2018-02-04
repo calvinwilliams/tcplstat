@@ -46,7 +46,9 @@
 #define MEMCMP(_a_,_C_,_b_,_n_) ( memcmp(_a_,_b_,_n_) _C_ 0 )
 #endif
 
-#define _DEBUG		0
+#define SIZE_ETHERNET		14
+
+#define _TCPLSTAT_DEBUG		0
 
 struct TcplAddrHumanReadable
 {
@@ -57,23 +59,54 @@ struct TcplAddrHumanReadable
 } ;
 
 #define SET_TCPL_SESSION_ID(_tcpl_session_id_,_client_ip_,_client_port_,_server_ip_,_server_port_) \
-	(_tcpl_session_id_).client_ip.s_addr = _client_ip_.s_addr ; \
-	(_tcpl_session_id_).client_port = _client_port_ ; \
-	(_tcpl_session_id_).server_ip.s_addr = _server_ip_.s_addr ; \
-	(_tcpl_session_id_).server_port = _server_port_ ; \
+	{ \
+		memset( & (_tcpl_session_id_) , 0x00 , sizeof(struct TcplSessionId) ); \
+		(_tcpl_session_id_).client_ip.s_addr = _client_ip_.s_addr ; \
+		(_tcpl_session_id_).client_port = _client_port_ ; \
+		(_tcpl_session_id_).server_ip.s_addr = _server_ip_.s_addr ; \
+		(_tcpl_session_id_).server_port = _server_port_ ; \
+	} \
 
 #define COPY_TIMEVAL(_timeval1_,_timeval2_) \
-	(_timeval1_).tv_sec = _timeval2_.tv_sec ; \
-	(_timeval1_).tv_usec = _timeval2_.tv_usec ; \
+	{ \
+		(_timeval1_).tv_sec = (_timeval2_).tv_sec ; \
+		(_timeval1_).tv_usec = (_timeval2_).tv_usec ; \
+	} \
 
 #define DIFF_TIMEVAL(_timeval1_,_timeval2_) \
-	(_timeval1_).tv_sec -= (_timeval2_).tv_sec ; \
-	(_timeval1_).tv_usec -= (_timeval2_).tv_usec ; \
-	while( (_timeval1_).tv_usec < 0 ) \
 	{ \
-		(_timeval1_).tv_usec += 1000000 ; \
-		(_timeval1_).tv_sec--; \
+		(_timeval1_).tv_sec -= (_timeval2_).tv_sec ; \
+		(_timeval1_).tv_usec -= (_timeval2_).tv_usec ; \
+		while( (_timeval1_).tv_usec < 0 ) \
+		{ \
+			(_timeval1_).tv_usec += 1000000 ; \
+			(_timeval1_).tv_sec--; \
+		} \
 	} \
+
+#define ADD_TIMEVAL(_timeval1_,_timeval2_) \
+	{ \
+		(_timeval1_).tv_sec += (_timeval2_).tv_sec ; \
+		(_timeval1_).tv_usec += (_timeval2_).tv_usec ; \
+		while( (_timeval1_).tv_usec >= 1000000 ) \
+		{ \
+			(_timeval1_).tv_usec -= 1000000 ; \
+			(_timeval1_).tv_sec++; \
+		} \
+	} \
+
+#define COMPARE_TIMEVAL(_timeval1_,_compare_,_timeval2_) \
+	( \
+		( \
+			(_timeval1_).tv_sec < (_timeval2_).tv_sec ? -1 : ( \
+				(_timeval1_).tv_sec > (_timeval2_).tv_sec ? 1 : ( \
+					(_timeval1_).tv_usec < (_timeval2_).tv_usec ? -1 : ( \
+						(_timeval1_).tv_usec > (_timeval2_).tv_usec ? 1 : 0 \
+					) \
+				) \
+			) \
+		) _compare_ 0\
+	) \
 
 struct TcplSessionId
 {
@@ -82,6 +115,9 @@ struct TcplSessionId
 	struct in_addr		server_ip ;
 	uint16_t		server_port ;
 } ;
+
+#define TCPLPACKET_DIRECTION		1
+#define TCPLPACKET_OPPO_DIRECTION	2
 
 #define TCPLPACKET_FLAG_UNKNOW	0
 #define TCPLPACKET_FLAG_SYN	1
@@ -92,20 +128,32 @@ struct TcplSessionId
 struct TcplPacket
 {
 	struct timeval		timestamp ;
-	int			direct_flag ;
-	struct timeval		diff_oppo_direction_elapse ;
-	struct timeval		diff_last_elapse ;
 	
+	struct timeval		last_packet_elapse ;
+	struct timeval		last_oppo_packet_elapse ;
+	
+	unsigned char		direction_flag ;
 	char			packet_flags[ 6 + 1 ] ; /*SFPARU*/
-	uint32_t		packet_data_len ;
-	char			*packet_data ;
+	
+	char			*packet_data_intercepted ;
+	uint32_t		packet_data_len_intercepted ;
+	uint32_t		packet_data_len_actually ;
 	
 	struct list_head	this_node ;
 } ;
 
+#define TCPLSESSION_STATE_DISCONNECTED	0
+#define TCPLSESSION_STATE_CONNECTING	1
+#define TCPLSESSION_STATE_CONNECTED	2
+#define TCPLSESSION_STATE_DISCONNECTING	3
+
 #define TCPLSESSION_STATUS_CLOSED	0
 #define TCPLSESSION_STATUS_SYN		1
 #define TCPLSESSION_STATUS_FIN		2
+
+#define TCPLSESSION_DISCONNECT_WAITFOR		0
+#define TCPLSESSION_DISCONNECT_DIRECTION	1
+#define TCPLSESSION_DISCONNECT_OPPO_DIRECTION	2
 
 struct TcplSession
 {
@@ -113,11 +161,31 @@ struct TcplSession
 	struct TcplAddrHumanReadable	tcpl_addr_hr ;
 	
 	struct timeval			begin_timestamp ;
-	int				status[ 2 ] ;
+	
+	struct timeval			wait_for_second_syn_and_first_ack_elapse ;
+	struct timeval			wait_for_after_syn_and_second_ack_elapse ;
+	
+	struct timeval			min_packet_elapse ;
+	struct timeval			max_packet_elapse ;
+	struct timeval			total_packet_elapse_for_avg ;
+	struct timeval			min_oppo_packet_elapse ;
+	struct timeval			max_oppo_packet_elapse ;
+	struct timeval			total_oppo_packet_elapse_for_avg ;
+	
+	struct timeval			wait_for_first_fin_elapse ;
+	struct timeval			wait_for_second_fin_and_first_ack_elapse ;
+	struct timeval			wait_for_second_ack_elapse ;
+	
+	unsigned char			state ;
+	unsigned char			status[ 2 ] ;
+	unsigned char			disconnect_direction ;
 	
 	struct TcplPacket		tcpl_packets_list ;
-	struct TcplPacket		*p_recent_sent_packet ;
-	struct TcplPacket		*p_recent_recv_packet ;
+	struct TcplPacket		*p_recent_packet ;
+	struct TcplPacket		*p_recent_oppo_packet ;
+	
+	uint32_t			total_packet_count ;
+	uint32_t			total_packet_data_len ;
 	
 	struct rb_node			tcplsession_rbnode ;
 } ;
@@ -142,6 +210,9 @@ struct TcplStatEnv
 	pcap_t				*pcap ;
 	struct bpf_program		pcap_filter ;
 	
+	struct timeval			fixed_timestamp ;
+	struct timeval			last_fixed_timestamp ;
+	
 	struct rb_root			tcplsessions_rbtree ;
 } ;
 
@@ -152,11 +223,13 @@ struct TcplSession *TravelTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_e
 void DestroyTcplSessionTree( struct TcplStatEnv *p_tcpl_stat_env );
 
 char *memndup( const char *s, size_t n );
-int DumpBuffer( char *pathfilename , int buf_len , void *buf );
+int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf );
 
 void PcapCallback( u_char *args , const struct pcap_pkthdr *header , const u_char *packet );
 
-int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , uint32_t packet_data_len , char *packet_data );
+int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );
 
 #endif
 

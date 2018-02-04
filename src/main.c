@@ -27,7 +27,7 @@ static void usage()
 
 int main( int argc , char *argv[] )
 {
-	struct TcplStatEnv	env , *p_env = & env ;
+	struct TcplStatEnv	*p_env = NULL ;
 	int			i ;
 	
 	bpf_u_int32		net ;
@@ -44,13 +44,20 @@ int main( int argc , char *argv[] )
 		exit(0);
 	}
 	
-	memset( & env , 0x00 , sizeof(struct TcplStatEnv) );
+	p_env = (struct TcplStatEnv *)malloc( sizeof(struct TcplStatEnv) ) ;
+	if( p_env == NULL )
+	{
+		printf( "*** ERROR : malloc TcplStatEnv failed , errno[%d]\n" , errno );
+		return 1;
+	}
+	memset( p_env , 0x00 , sizeof(struct TcplStatEnv) );
 	
 	for( i = 1 ; i < argc ; i++ )
 	{
 		if( STRCMP( argv[i] , == , "-v" ) )
 		{
 			version();
+			free( p_env );
 			exit(0);
 		}
 		else if( STRCMP( argv[i] , == , "-i" ) && i + 1 < argc )
@@ -67,6 +74,7 @@ int main( int argc , char *argv[] )
 			if( nret == -1 )
 			{
 				printf( "*** ERROR : pcap_findalldevs failed , errbuf[%s]\n" , p_env->pcap_errbuf );
+				free( p_env );
 				return 1;
 			}
 			
@@ -80,6 +88,7 @@ int main( int argc , char *argv[] )
 			
 			pcap_freealldevs( network_interface_list );
 			
+			free( p_env );
 			exit(0);
 		}
 		else if( STRCMP( argv[i] , == , "-f" ) && i + 1 < argc )
@@ -103,6 +112,7 @@ int main( int argc , char *argv[] )
 		{
 			printf( "***ERROR : invalid command parameter '%s'\n" , argv[i] );
 			usage();
+			free( p_env );
 			exit(1);
 		}
 	}
@@ -120,6 +130,7 @@ int main( int argc , char *argv[] )
 		if( nret == -1 )
 		{
 			printf( "*** ERROR : pcap_findalldevs failed , errbuf[%s]\n" , p_env->pcap_errbuf );
+			free( p_env );
 			return 1;
 		}
 		
@@ -137,6 +148,7 @@ int main( int argc , char *argv[] )
 		if( network_interface == NULL )
 		{
 			printf( "*** ERROR : network interface [%s] not found\n" , p_env->cmd_line_para.network_interface );
+			free( p_env );
 			return 1;
 		}
 	}
@@ -148,13 +160,15 @@ int main( int argc , char *argv[] )
 	if( nret == -1 )
 	{
 		printf( "*** ERROR : pcap_lookupnet failed , errbuf[%s]\n" , p_env->pcap_errbuf );
+		free( p_env );
 		return 1;
 	}
 	
-	p_env->pcap = pcap_open_live( p_env->cmd_line_para.network_interface , 65535 , 1 , 2000 , p_env->pcap_errbuf ) ;
+	p_env->pcap = pcap_open_live( p_env->cmd_line_para.network_interface , 65535 , 1 , 1000 , p_env->pcap_errbuf ) ;
 	if( p_env->pcap == NULL )
 	{
 		printf( "*** ERROR : pcap_open_live failed , errbuf[%s]\n" , p_env->pcap_errbuf );
+		free( p_env );
 		return 1;
 	}
 	
@@ -164,6 +178,7 @@ int main( int argc , char *argv[] )
 	{
 		printf( "*** ERROR : pcap_compile failed , errbuf[%s]\n" , p_env->pcap_errbuf );
 		pcap_close( p_env->pcap );
+		free( p_env );
 		return 1;
 	}
 	
@@ -172,12 +187,15 @@ int main( int argc , char *argv[] )
 	{
 		printf( "*** ERROR : pcap_setfilter failed , errbuf[%s]\n" , p_env->pcap_errbuf );
 		pcap_close( p_env->pcap );
+		free( p_env );
 		return 1;
 	}
 	
 	pcap_loop( p_env->pcap , -1 , PcapCallback , (u_char *)p_env );
 	
 	pcap_close( p_env->pcap );
+	
+	free( p_env );
 	
 	return 0;
 }
