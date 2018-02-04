@@ -1,3 +1,11 @@
+/*
+ * tcplstat - TCP packets monitor and statistical tool
+ * author	: calvin
+ * email	: calvinwilliams@163.com
+ *
+ * Licensed under the LGPL v2.1, see the file LICENSE in base directory.
+ */
+
 #include "tcplstat_in.h"
 
 void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_char *packet )
@@ -36,6 +44,8 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	}
 	
 	if( type != ETHERTYPE_IP )
+		return;
+	if( iphdr->ip_p != 6 )
 		return;
 	
 	tcphdr = (struct tcphdr *)( (char*)iphdr + iphdr->ip_hl * 4 ) ;

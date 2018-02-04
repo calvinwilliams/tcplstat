@@ -1,11 +1,18 @@
+/*
+ * tcplstat - TCP packets monitor and statistical tool
+ * author	: calvin
+ * email	: calvinwilliams@163.com
+ *
+ * Licensed under the LGPL v2.1, see the file LICENSE in base directory.
+ */
+
 #include "tcplstat_in.h"
 
-static char _g_tcpl_packet_flag[] = { 'U' , 'S' , 'F' , 'D' , 'A' } ;
-
-static int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , int direct_flag , int packet_flag , uint32_t packet_data_len , char *packet_data )
+static int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , int direct_flag , struct tcphdr *tcphdr , uint32_t packet_data_len , char *packet_data )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_oppo_direct_tcpl_packet = NULL ;
+	struct TcplPacket	*p_last_tcpl_packet = NULL ;
 	
 	p_tcpl_packet = (struct TcplPacket *)malloc( sizeof(struct TcplPacket) ) ;
 	if( p_tcpl_packet == NULL )
@@ -15,9 +22,17 @@ static int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *p
 	}
 	memset( p_tcpl_packet , 0x00 , sizeof(struct TcplPacket) );
 	
+printf( "XXX - ts[%ld.%06ld]\n" , pcaphdr->ts.tv_sec , pcaphdr->ts.tv_usec );
 	COPY_TIMEVAL( p_tcpl_packet->timestamp , pcaphdr->ts )
 	
 	p_tcpl_packet->direct_flag = direct_flag ;
+	
+	p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+	if( p_last_tcpl_packet )
+	{
+		gettimeofday( & (p_tcpl_packet->diff_last_elapse) , NULL );
+		DIFF_TIMEVAL( p_tcpl_packet->diff_last_elapse , p_last_tcpl_packet->timestamp )
+	}
 	
 	if( direct_flag == 0 )
 		p_oppo_direct_tcpl_packet = p_tcpl_session->p_recent_sent_packet ;
@@ -25,11 +40,13 @@ static int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *p
 		p_oppo_direct_tcpl_packet = p_tcpl_session->p_recent_recv_packet ;
 	if( p_oppo_direct_tcpl_packet )
 	{
-		gettimeofday( & (p_tcpl_packet->diff_opposite_direction) , NULL );
-		DIFF_TIMEVAL( p_tcpl_packet->diff_opposite_direction , p_oppo_direct_tcpl_packet->timestamp )
+		gettimeofday( & (p_tcpl_packet->diff_oppo_direction_elapse) , NULL );
+		DIFF_TIMEVAL( p_tcpl_packet->diff_oppo_direction_elapse , p_oppo_direct_tcpl_packet->timestamp )
 	}
 	
-	p_tcpl_packet->packet_flag = packet_flag ;
+	sprintf( p_tcpl_packet->packet_flags , "%c%c%c%c%c%c"
+		, tcphdr->syn?'S':'.' , tcphdr->fin?'F':'.' , tcphdr->psh?'P':'.' , tcphdr->ack?'A':'.' , tcphdr->rst?'R':'.' , tcphdr->urg?'U':'.' );
+	
 	p_tcpl_packet->packet_data_len = packet_data_len ;
 	if( packet_data_len == 0 )
 		p_tcpl_packet->packet_data = "" ;
@@ -68,9 +85,15 @@ static void DumpTcplSession( struct TcplStatEnv *p_env , struct TcplSession *p_t
 	
 	if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_1 )
 	{
-		printf( "[%s:%d]->[%s:%d] %ld.%06ld\n"
+		struct timeval	total_elapse ;
+		
+		gettimeofday( & total_elapse , NULL );
+		DIFF_TIMEVAL( total_elapse , p_tcpl_session->begin_timestamp )
+		
+		printf( "[%s:%d]->[%s:%d] %ld.%06ld %ld.%06ld\n"
 			, p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port
-			, p_tcpl_session->begin_timestamp.tv_sec , p_tcpl_session->begin_timestamp.tv_usec );
+			, p_tcpl_session->begin_timestamp.tv_sec , p_tcpl_session->begin_timestamp.tv_usec
+			, total_elapse.tv_sec , total_elapse.tv_usec );
 	}
 	
 	if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_2 )
@@ -84,13 +107,14 @@ static void DumpTcplSession( struct TcplStatEnv *p_env , struct TcplSession *p_t
 			else
 				direct_string = "<-" ;
 			
-			printf( "\t%ld.%06ld %ld.%06ld [%s:%d]%s[%s:%d] %c %u\n"
+			printf( "\t%ld.%06ld %ld.%06ld %ld.%06ld [%s:%d]%s[%s:%d] %s %u\n"
 				, p_tcpl_packet->timestamp.tv_sec , p_tcpl_packet->timestamp.tv_usec
-				, p_tcpl_packet->diff_opposite_direction.tv_sec , p_tcpl_packet->diff_opposite_direction.tv_usec
+				, p_tcpl_packet->diff_last_elapse.tv_sec , p_tcpl_packet->diff_last_elapse.tv_usec
+				, p_tcpl_packet->diff_oppo_direction_elapse.tv_sec , p_tcpl_packet->diff_oppo_direction_elapse.tv_usec
 				, p_tcpl_session->tcpl_addr_hr.src_ip , p_tcpl_session->tcpl_addr_hr.src_port
 				, direct_string
 				, p_tcpl_session->tcpl_addr_hr.dst_ip , p_tcpl_session->tcpl_addr_hr.dst_port
-				, _g_tcpl_packet_flag[p_tcpl_packet->packet_flag] , p_tcpl_packet->packet_data_len );
+				, p_tcpl_packet->packet_flags , p_tcpl_packet->packet_data_len );
 			if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_3 )
 			{
 				if( p_tcpl_packet->packet_data_len > 0 )
@@ -159,7 +183,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				
 				p_tcpl_session->status[1] = TCPLSESSION_STATUS_SYN ;
 				
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 1 , TCPLPACKET_FLAG_SYN , packet_data_len , packet_data ) ;
+				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 1 , tcphdr , packet_data_len , packet_data ) ;
 				if( nret )
 					return nret;
 				
@@ -189,7 +213,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				if( nret )
 					return nret;
 				
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , TCPLPACKET_FLAG_SYN , packet_data_len , packet_data ) ;
+				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , tcphdr , packet_data_len , packet_data ) ;
 				if( nret )
 					return nret;
 				
@@ -212,7 +236,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			{
 				p_tcpl_session->status[0] = TCPLSESSION_STATUS_FIN ;
 				
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , TCPLPACKET_FLAG_FIN , packet_data_len , packet_data ) ;
+				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , tcphdr , packet_data_len , packet_data ) ;
 				if( nret )
 					return nret;
 			}
@@ -244,7 +268,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				{
 					p_tcpl_session->status[1] = TCPLSESSION_STATUS_FIN ;
 					
-					nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 1 , TCPLPACKET_FLAG_FIN , packet_data_len , packet_data ) ;
+					nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 1 , tcphdr , packet_data_len , packet_data ) ;
 					if( nret )
 						return nret;
 				}
@@ -279,7 +303,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	{
 		if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN && p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN )
 		{
-			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , tcphdr->ack?TCPLPACKET_FLAG_ACK:TCPLPACKET_FLAG_DAT , packet_data_len , packet_data ) ;
+			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , tcphdr , packet_data_len , packet_data ) ;
 			if( nret )
 				return nret;
 			
@@ -298,7 +322,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		{
 			if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN && p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN )
 			{
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , tcphdr->ack?TCPLPACKET_FLAG_ACK:TCPLPACKET_FLAG_DAT , packet_data_len , packet_data ) ;
+				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , 0 , tcphdr , packet_data_len , packet_data ) ;
 				if( nret )
 					return nret;
 				

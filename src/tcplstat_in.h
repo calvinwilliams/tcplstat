@@ -1,3 +1,11 @@
+/*
+ * tcplstat - TCP packets monitor and statistical tool
+ * author	: calvin
+ * email	: calvinwilliams@163.com
+ *
+ * Licensed under the LGPL v2.1, see the file LICENSE in base directory.
+ */
+
 #ifndef _H_TCPLSTAT_
 #define _H_TCPLSTAT_
 
@@ -85,9 +93,10 @@ struct TcplPacket
 {
 	struct timeval		timestamp ;
 	int			direct_flag ;
-	struct timeval		diff_opposite_direction ;
+	struct timeval		diff_oppo_direction_elapse ;
+	struct timeval		diff_last_elapse ;
 	
-	int			packet_flag ;
+	char			packet_flags[ 6 + 1 ] ; /*SFPARU*/
 	uint32_t		packet_data_len ;
 	char			*packet_data ;
 	
