@@ -11,6 +11,7 @@
 void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_char *packet )
 {
 	struct TcplStatEnv		*p_env = (struct TcplStatEnv *)args ;
+	int				linklayer_header_type ;
 	struct sll_header		*sll = NULL ;
 	struct ether_header		*etherhdr = NULL ;
 	struct ip			*iphdr = NULL ;
@@ -33,7 +34,8 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 		COPY_TIMEVAL( p_env->fixed_timestamp , p_env->last_fixed_timestamp )
 	}
 	
-	switch( pcap_datalink(p_env->pcap) )
+	linklayer_header_type = pcap_datalink(p_env->pcap) ;
+	switch( linklayer_header_type )
 	{
 		case DLT_LINUX_SLL :
 			sll = (struct sll_header *)packet ;
@@ -67,6 +69,12 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	else
 		packet_data_intercepted = NULL ;
 	
+	memset( & tcpl_addr_hr , 0x00 , sizeof(struct TcplAddrHumanReadable) );
+	if( etherhdr )
+	{
+		sprintf( tcpl_addr_hr.src_mac , "%02X:%02X:%02X:%02X:%02X:%02X" , etherhdr->ether_shost[0] , etherhdr->ether_shost[1] , etherhdr->ether_shost[2] , etherhdr->ether_shost[3] , etherhdr->ether_shost[4] , etherhdr->ether_shost[5] );
+		sprintf( tcpl_addr_hr.dst_mac , "%02X:%02X:%02X:%02X:%02X:%02X" , etherhdr->ether_dhost[0] , etherhdr->ether_dhost[1] , etherhdr->ether_dhost[2] , etherhdr->ether_dhost[3] , etherhdr->ether_dhost[4] , etherhdr->ether_dhost[5] );
+	}
 	strcpy( tcpl_addr_hr.src_ip , inet_ntoa(iphdr->ip_src) );
 	strcpy( tcpl_addr_hr.dst_ip , inet_ntoa(iphdr->ip_dst) );
 	tcpl_addr_hr.src_port = ntohs(tcphdr->source) ;
@@ -74,12 +82,16 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	
 	if( p_env->cmd_line_para.output_event )
 	{
-		printf( "E | ETHTYPE[%d] SRCMAC[%X] DSTMAC[%X] | IPID[%d] PROTO[%d] SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
-			, etherhdr?etherhdr->ether_type:0 , etherhdr?etherhdr->ether_shost[0]:0 , etherhdr?etherhdr->ether_dhost[0]:0
-			, iphdr->ip_id , iphdr->ip_p , tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
+		printf( "E | LHT[%d] | SRCMAC[%s] DSTMAC[%s] | SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
+			, linklayer_header_type
+			, tcpl_addr_hr.src_mac , tcpl_addr_hr.dst_mac
+			, tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
 			, tcpl_addr_hr.src_port , tcpl_addr_hr.dst_port , tcphdr->seq , tcphdr->ack_seq , tcphdr->syn , tcphdr->ack , tcphdr->fin , tcphdr->psh , tcphdr->rst , tcphdr->urg
 			, packet_data_len_intercepted );
-		DumpBuffer( "E | " , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
+		if( packet_data_len_intercepted > 0 )
+		{
+			DumpBuffer( "E |     " , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
+		}
 	}
 	
 	nret = ProcessTcpPacket( p_env , pcaphdr , etherhdr , iphdr , tcphdr , & tcpl_addr_hr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_intercepted ) ;

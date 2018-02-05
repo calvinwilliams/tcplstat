@@ -66,21 +66,36 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	{
 		ADD_TIMEVAL( p_tcpl_session->total_packet_elapse_for_avg , p_tcpl_packet->last_packet_elapse )
 		
-		if( COMPARE_TIMEVAL( p_tcpl_packet->last_packet_elapse , < , p_tcpl_session->min_packet_elapse ) )
+		if( p_tcpl_session->min_packet_flag == 0 || COMPARE_TIMEVAL( p_tcpl_packet->last_packet_elapse , < , p_tcpl_session->min_packet_elapse ) )
+		{
+			p_tcpl_session->min_packet_flag = 1 ;
 			COPY_TIMEVAL( p_tcpl_session->min_packet_elapse , p_tcpl_packet->last_packet_elapse )
-		if( COMPARE_TIMEVAL( p_tcpl_packet->last_packet_elapse , > , p_tcpl_session->max_packet_elapse ) )
+		}
+		if( p_tcpl_session->max_packet_flag == 0 || COMPARE_TIMEVAL( p_tcpl_packet->last_packet_elapse , > , p_tcpl_session->max_packet_elapse ) )
+		{
+			p_tcpl_session->max_packet_flag = 1 ;
 			COPY_TIMEVAL( p_tcpl_session->max_packet_elapse , p_tcpl_packet->last_packet_elapse )
+		}
 		
 		ADD_TIMEVAL( p_tcpl_session->total_oppo_packet_elapse_for_avg , p_tcpl_packet->last_oppo_packet_elapse )
 		
-		if( COMPARE_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , < , p_tcpl_session->min_packet_elapse ) )
+		if( p_tcpl_session->min_oppo_packet_flag == 0 || COMPARE_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , < , p_tcpl_session->min_packet_elapse ) )
+		{
+			p_tcpl_session->min_oppo_packet_flag = 1 ;
 			COPY_TIMEVAL( p_tcpl_session->min_oppo_packet_elapse , p_tcpl_packet->last_oppo_packet_elapse )
-		if( COMPARE_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , > , p_tcpl_session->max_oppo_packet_elapse ) )
+		}
+		if( p_tcpl_session->max_oppo_packet_flag == 0 || COMPARE_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , > , p_tcpl_session->max_oppo_packet_elapse ) )
+		{
+			p_tcpl_session->max_oppo_packet_flag = 1 ;
 			COPY_TIMEVAL( p_tcpl_session->max_oppo_packet_elapse , p_tcpl_packet->last_oppo_packet_elapse )
+		}
 		
 		p_tcpl_session->total_packet_count++;
 		p_tcpl_session->total_packet_data_len += packet_data_len_actually ;
 	}
+	
+	if( p_env->cmd_line_para.output_debug )
+		OUTPUT_PACKET_EVENT( p_tcpl_session , p_tcpl_packet )
 	
 	return 0;
 }

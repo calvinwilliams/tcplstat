@@ -48,10 +48,10 @@
 
 #define SIZE_ETHERNET		14
 
-#define _TCPLSTAT_DEBUG		1
-
 struct TcplAddrHumanReadable
 {
+	char		src_mac[ 17 + 1 ] ;
+	char		dst_mac[ 17 + 1 ] ;
 	char		src_ip[ 15 + 1 ] ;
 	char		dst_ip[ 15 + 1 ] ;
 	int		src_port ;
@@ -125,6 +125,18 @@ struct TcplSessionId
 #define TCPLPACKET_FLAG_DAT	3
 #define TCPLPACKET_FLAG_ACK	4
 
+#define OUTPUT_PACKET_EVENT(_p_tcpl_session_,_p_tcpl_packet_) \
+	{ \
+		printf( "d |     ADD PACKET OF SESSION[%p] | %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] %s %d\n" \
+			, (_p_tcpl_session_) \
+			, (_p_tcpl_packet_)->timestamp.tv_sec , (_p_tcpl_packet_)->timestamp.tv_usec \
+			, (_p_tcpl_packet_)->last_packet_elapse.tv_sec , (_p_tcpl_packet_)->last_packet_elapse.tv_usec \
+			, (_p_tcpl_packet_)->last_oppo_packet_elapse.tv_sec , (_p_tcpl_packet_)->last_oppo_packet_elapse.tv_usec \
+			, (_p_tcpl_session_)->tcpl_addr_hr.src_ip , (_p_tcpl_session_)->tcpl_addr_hr.src_port , (_p_tcpl_packet_)->direction_flag==TCPLPACKET_DIRECTION?"->":"<-" , (_p_tcpl_session_)->tcpl_addr_hr.dst_ip , (_p_tcpl_session_)->tcpl_addr_hr.dst_port \
+			, (_p_tcpl_packet_)->packet_flags \
+			, (_p_tcpl_packet_)->packet_data_len_actually ); \
+	} \
+
 struct TcplPacket
 {
 	struct timeval		timestamp ;
@@ -148,12 +160,21 @@ struct TcplPacket
 #define TCPLSESSION_STATE_DISCONNECTING	3
 
 #define TCPLSESSION_STATUS_CLOSED	0
-#define TCPLSESSION_STATUS_SYN		1
-#define TCPLSESSION_STATUS_FIN		2
+#define TCPLSESSION_STATUS_SYN		'S'
+#define TCPLSESSION_STATUS_FIN		'F'
 
 #define TCPLSESSION_DISCONNECT_WAITFOR		0
 #define TCPLSESSION_DISCONNECT_DIRECTION	1
 #define TCPLSESSION_DISCONNECT_OPPO_DIRECTION	2
+
+#define OUTPUT_SESSION_EVENT(_action_,_direction_flag_,_p_tcpl_session_) \
+	{ \
+		printf( "d |     %s SESSION[%p] | [%s:%d]%s[%s:%d] | %s | %c%c\n" \
+			, (_action_) , (_p_tcpl_session_) \
+			, (_p_tcpl_session_)->tcpl_addr_hr.src_ip , (_p_tcpl_session_)->tcpl_addr_hr.src_port , (_direction_flag_)==TCPLPACKET_DIRECTION?"->":"<-" , (_p_tcpl_session_)->tcpl_addr_hr.dst_ip , (_p_tcpl_session_)->tcpl_addr_hr.dst_port \
+			, _g_tcplstat_tcplsession_state[(_p_tcpl_session_)->state] \
+			, (_p_tcpl_session_)->status[0]?(_p_tcpl_session_)->status[0]:'.' , (_p_tcpl_session_)->status[1]?(_p_tcpl_session_)->status[1]:'.' ); \
+	} \
 
 struct TcplSession
 {
@@ -164,6 +185,11 @@ struct TcplSession
 	
 	struct timeval			wait_for_second_syn_and_first_ack_elapse ;
 	struct timeval			wait_for_after_syn_and_second_ack_elapse ;
+	
+	unsigned char			min_packet_flag ;
+	unsigned char			max_packet_flag ;
+	unsigned char			min_oppo_packet_flag ;
+	unsigned char			max_oppo_packet_flag ;
 	
 	struct timeval			min_packet_elapse ;
 	struct timeval			max_packet_elapse ;
@@ -194,6 +220,7 @@ struct CommandLineParameters
 {
 	char			*network_interface ;
 	char			*filter_string ;
+	unsigned char		output_debug ;
 	unsigned char		output_event ;
 	unsigned char		output_session ;
 	unsigned char		output_session_packet ;

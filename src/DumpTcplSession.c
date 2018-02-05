@@ -67,7 +67,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			else
 				direct_string = "<-" ;
 			
-			printf( "P |    %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] | %s %u\n"
+			printf( "P |     %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] | %s %u\n"
 				, p_tcpl_packet->timestamp.tv_sec , p_tcpl_packet->timestamp.tv_usec
 				
 				, p_tcpl_packet->last_packet_elapse.tv_sec , p_tcpl_packet->last_packet_elapse.tv_usec
@@ -84,7 +84,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			{
 				if( p_tcpl_packet->packet_data_len_intercepted > 0 )
 				{
-					DumpBuffer( "D |    " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
+					DumpBuffer( "D |     " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
 				}
 			}
 			

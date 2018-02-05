@@ -21,7 +21,7 @@ static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
 	printf( "                 -l\n" );
-	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPD] ]\n" );
+	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [dESPD] ]\n" );
 	printf( "NOTICE : See pcap-filter(7) for the syntax of filter\n" );
 	return;
 }
@@ -99,6 +99,8 @@ int main( int argc , char *argv[] )
 		}
 		else if( STRCMP( argv[i] , == , "-o" ) )
 		{
+			if( strchr( argv[i+1] , 'd' ) )
+				p_env->cmd_line_para.output_debug = 1 ;
 			if( strchr( argv[i+1] , 'E' ) )
 				p_env->cmd_line_para.output_event = 1 ;
 			if( strchr( argv[i+1] , 'S' ) )
