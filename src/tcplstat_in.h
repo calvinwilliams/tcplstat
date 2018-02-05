@@ -48,7 +48,7 @@
 
 #define SIZE_ETHERNET		14
 
-#define _TCPLSTAT_DEBUG		0
+#define _TCPLSTAT_DEBUG		1
 
 struct TcplAddrHumanReadable
 {

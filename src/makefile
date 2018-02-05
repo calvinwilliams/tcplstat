@@ -24,10 +24,12 @@ BIN		=	tcplstat
 BININST		=	$(_BININST)
 
 ###### 编译选项
-CFLAGS		=	$(_CFLAGS) \
+CFLAGS		=	-I$(HOME)/include \
+			$(_CFLAGS) \
 
 ###### 链接选项
-LFLAGS		=	$(_LFLAGS) \
+LFLAGS		=	-L$(HOME)/lib \
+			$(_LFLAGS) \
 			-lpcap \
 
 ###### 额外宏定义区
