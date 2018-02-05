@@ -20,13 +20,11 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	{
 		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
 		p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
-#if _TCPLSTAT_DEBUG
-		printf( "DEBUG - ProcessTcpPacket - syn - QueryTcplSessionTreeNode return[%p][%d]\n" , p_tcpl_session , p_tcpl_session?p_tcpl_session->state:-1 );
-#endif
 		if( p_tcpl_session )
 		{
 			if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN )
 			{
+				printf( "*** WARN : [%s:%d]->[%s:%d] SYN DUPLICATED\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 				return 0;
 			}
 			else
@@ -41,13 +39,11 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		{
 			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_dst , tcphdr->dest , iphdr->ip_src , tcphdr->source )
 			p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
-#if _TCPLSTAT_DEBUG
-			printf( "DEBUG - ProcessTcpPacket - reverse syn - QueryTcplSessionTreeNode return[%p][%d]\n" , p_tcpl_session , p_tcpl_session?p_tcpl_session->state:-1 );
-#endif
 			if( p_tcpl_session )
 			{
 				if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN )
 				{
+					printf( "*** WARN : [%s:%d]->[%s:%d] REVERSE SYN DUPLICATED\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 					return 0;
 				}
 				
@@ -80,9 +76,11 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				p_tcpl_session->status[0] = TCPLSESSION_STATUS_SYN ;
 				INIT_LIST_HEAD( & (p_tcpl_session->tcpl_packets_list.this_node) );
 				
-#if _TCPLSTAT_DEBUG
-				printf( "DEBUG - ProcessTcpPacket - LinkTcplSessionTreeNode[%p] return[%d]\n" , p_tcpl_session , nret );
-#endif
+				printf( "E | [%s:%d]->[%s:%d] %ld.%06ld %s %s ADD SESSION[%p]\n"
+					, p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port
+					, p_tcpl_session->begin_timestamp.tv_sec , p_tcpl_session->begin_timestamp.tv_usec
+					, p_tcpl_session );
+				
 				nret = LinkTcplSessionTreeNode( p_env , p_tcpl_session ) ;
 				if( nret )
 					return nret;

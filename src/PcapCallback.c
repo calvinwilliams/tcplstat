@@ -33,9 +33,6 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 		COPY_TIMEVAL( p_env->fixed_timestamp , p_env->last_fixed_timestamp )
 	}
 	
-/*
-printf( "LIHUA - ts[%ld.%06ld] pcaphdr->len[%d] pcaphdr->caplen[%d] - now[%ld:%06ld]\n" , pcaphdr->ts.tv_sec , pcaphdr->ts.tv_usec , pcaphdr->len , pcaphdr->caplen , p_env->now.tv_sec , p_env->now.tv_usec );
-*/
 	switch( pcap_datalink(p_env->pcap) )
 	{
 		case DLT_LINUX_SLL :
@@ -75,14 +72,15 @@ printf( "LIHUA - ts[%ld.%06ld] pcaphdr->len[%d] pcaphdr->caplen[%d] - now[%ld:%0
 	tcpl_addr_hr.src_port = ntohs(tcphdr->source) ;
 	tcpl_addr_hr.dst_port = ntohs(tcphdr->dest) ;
 	
-#if _TCPLSTAT_DEBUG
-	printf( "DEBUG - ETHTYPE[%d] SRCMAC[%X] DSTMAC[%X] | IPID[%d] PROTO[%d] SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
-		, etherhdr?etherhdr->ether_type:0 , etherhdr?etherhdr->ether_shost[0]:0 , etherhdr?etherhdr->ether_dhost[0]:0
-		, iphdr->ip_id , iphdr->ip_p , tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
-		, tcpl_addr_hr.src_port , tcpl_addr_hr.dst_port , tcphdr->seq , tcphdr->ack_seq , tcphdr->syn , tcphdr->ack , tcphdr->fin , tcphdr->psh , tcphdr->rst , tcphdr->urg
-		, packet_data_len_intercepted );
-	DumpBuffer( NULL , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
-#endif
+	if( p_env->cmd_line_para.output_event )
+	{
+		printf( "E | ETHTYPE[%d] SRCMAC[%X] DSTMAC[%X] | IPID[%d] PROTO[%d] SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
+			, etherhdr?etherhdr->ether_type:0 , etherhdr?etherhdr->ether_shost[0]:0 , etherhdr?etherhdr->ether_dhost[0]:0
+			, iphdr->ip_id , iphdr->ip_p , tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
+			, tcpl_addr_hr.src_port , tcpl_addr_hr.dst_port , tcphdr->seq , tcphdr->ack_seq , tcphdr->syn , tcphdr->ack , tcphdr->fin , tcphdr->psh , tcphdr->rst , tcphdr->urg
+			, packet_data_len_intercepted );
+		DumpBuffer( "E | " , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
+	}
 	
 	nret = ProcessTcpPacket( p_env , pcaphdr , etherhdr , iphdr , tcphdr , & tcpl_addr_hr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_intercepted ) ;
 	if( nret )

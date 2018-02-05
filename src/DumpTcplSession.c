@@ -13,7 +13,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_next_tcpl_packet = NULL ;
 	
-	if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_1 )
+	if( p_env->cmd_line_para.output_session )
 	{
 		struct timeval	total_elapse ;
 		double		avg_packet_elapse ;
@@ -31,7 +31,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		else
 			avg_oppo_packet_elapse = 0 ;
 		
-		printf( "S [%s:%d]->[%s:%d] | %ld.%06ld | %ld.%06ld | %ld.%06ld %ld.%06ld , %ld.%06ld %.6lf %ld.%06ld %ld.%06ld %.6lf %ld.%06ld , %ld.%06ld %ld.%06ld %ld.%06ld | %u %u\n"
+		printf( "S | [%s:%d]->[%s:%d] | %ld.%06ld | %ld.%06ld | %ld.%06ld %ld.%06ld , %ld.%06ld %.6lf %ld.%06ld %ld.%06ld %.6lf %ld.%06ld , %ld.%06ld %ld.%06ld %ld.%06ld | %u %u\n"
 			, p_tcpl_session->tcpl_addr_hr.src_ip , p_tcpl_session->tcpl_addr_hr.src_port , p_tcpl_session->tcpl_addr_hr.dst_ip , p_tcpl_session->tcpl_addr_hr.dst_port
 			
 			, p_tcpl_session->begin_timestamp.tv_sec , p_tcpl_session->begin_timestamp.tv_usec
@@ -56,7 +56,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			, p_tcpl_session->total_packet_count , p_tcpl_session->total_packet_data_len );
 	}
 	
-	if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_2 )
+	if( p_env->cmd_line_para.output_session_packet )
 	{
 		list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node )
 		{
@@ -67,7 +67,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			else
 				direct_string = "<-" ;
 			
-			printf( "P    %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] | %s %u\n"
+			printf( "P |    %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] | %s %u\n"
 				, p_tcpl_packet->timestamp.tv_sec , p_tcpl_packet->timestamp.tv_usec
 				
 				, p_tcpl_packet->last_packet_elapse.tv_sec , p_tcpl_packet->last_packet_elapse.tv_usec
@@ -80,11 +80,11 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				, p_tcpl_packet->packet_flags
 				, p_tcpl_packet->packet_data_len_actually );
 			
-			if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_3 )
+			if( p_env->cmd_line_para.output_session_packet_data )
 			{
 				if( p_tcpl_packet->packet_data_len_intercepted > 0 )
 				{
-					DumpBuffer( "D    " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
+					DumpBuffer( "D |    " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
 				}
 			}
 			

@@ -55,18 +55,6 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		return -1;
 	}
 	
-#if _TCPLSTAT_DEBUG
-	printf( "DEBUG - AddTcpPacket - timestamp[%ld.%06ld] last_packet_elapse[%ld.%06ld] last_oppo_packet_elapse[%ld.%06ld] packet_flags[%s] packet_data_len[%u]\n"
-		, p_tcpl_packet->timestamp.tv_sec , p_tcpl_packet->timestamp.tv_usec
-		, p_tcpl_packet->last_packet_elapse.tv_sec , p_tcpl_packet->last_packet_elapse.tv_usec
-		, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
-		, p_tcpl_packet->packet_flags , p_tcpl_packet->packet_data_len_actually );
-	if( p_env->cmd_line_para.output_level >= OUTPUT_LEVEL_3 )
-	{
-		if( p_tcpl_packet->packet_data_intercepted )
-			DumpBuffer( NULL , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
-	}
-#endif
 	list_add_tail( & (p_tcpl_packet->this_node) , & (p_tcpl_session->tcpl_packets_list.this_node) );
 	
 	if( direction_flag == TCPLPACKET_DIRECTION )

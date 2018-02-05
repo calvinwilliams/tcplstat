@@ -20,7 +20,8 @@ static void version()
 static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
-	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -v | -vv | -vvv ]\n" );
+	printf( "                 -l\n" );
+	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPD] ]\n" );
 	printf( "NOTICE : See pcap-filter(7) for the syntax of filter\n" );
 	return;
 }
@@ -96,17 +97,17 @@ int main( int argc , char *argv[] )
 			p_env->cmd_line_para.filter_string = argv[i+1] ;
 			i++;
 		}
-		else if( STRCMP( argv[i] , == , "-v" ) )
+		else if( STRCMP( argv[i] , == , "-o" ) )
 		{
-			p_env->cmd_line_para.output_level = OUTPUT_LEVEL_1 ;
-		}
-		else if( STRCMP( argv[i] , == , "-vv" ) )
-		{
-			p_env->cmd_line_para.output_level = OUTPUT_LEVEL_2 ;
-		}
-		else if( STRCMP( argv[i] , == , "-vvv" ) )
-		{
-			p_env->cmd_line_para.output_level = OUTPUT_LEVEL_3 ;
+			if( strchr( argv[i+1] , 'E' ) )
+				p_env->cmd_line_para.output_event = 1 ;
+			if( strchr( argv[i+1] , 'S' ) )
+				p_env->cmd_line_para.output_session = 1 ;
+			if( strchr( argv[i+1] , 'P' ) )
+				p_env->cmd_line_para.output_session_packet = 1 ;
+			if( strchr( argv[i+1] , 'D' ) )
+				p_env->cmd_line_para.output_session_packet_data = 1 ;
+			i++;
 		}
 		else
 		{

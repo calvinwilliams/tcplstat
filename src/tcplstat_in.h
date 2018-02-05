@@ -194,7 +194,10 @@ struct CommandLineParameters
 {
 	char			*network_interface ;
 	char			*filter_string ;
-	int			output_level ;
+	unsigned char		output_event ;
+	unsigned char		output_session ;
+	unsigned char		output_session_packet ;
+	unsigned char		output_session_packet_data ;
 } ;
 
 #define OUTPUT_LEVEL_0		0
