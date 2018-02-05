@@ -8,8 +8,16 @@
 
 #include "tcplstat_in.h"
 
-char    __TCPLSTAT_VERSION_0_0_1[] = "0.0.1" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_0_1 ;
+/* for testing tcplstat
+sudo tcplstat -f "tcp port 445" -o "dESPD"
+*/
+
+/* for testing
+echo "hello" | nc 192.168.6.21 445
+*/
+
+char    __TCPLSTAT_VERSION_0_3_0[] = "0.3.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_3_0 ;
 
 static void version()
 {
