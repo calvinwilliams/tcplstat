@@ -33,11 +33,12 @@ static void usage()
 	printf( "USAGE : tcplstat -v\n" );
 	printf( "                 -l\n" );
 	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ]\n" );
-	printf( "-o E : EVENT\n" );
-	printf( "   S : SESSION\n" );
-	printf( "   P : PACKET\n" );
-	printf( "   D : PACKET DATA\n" );
-	printf( "   d : DEBUG\n" );
+	printf( "-o E : Output EVENT\n" );
+	printf( "   S : Output SESSION\n" );
+	printf( "   P : Output PACKET\n" );
+	printf( "   D : Output PACKET DATA\n" );
+	printf( "   d : Output DEBUG\n" );
+	printf( "--sql : Output SQL time elapse\n" );
 	printf( "NOTICE : See pcap-filter(7) for the syntax of filter\n" );
 	return;
 }
