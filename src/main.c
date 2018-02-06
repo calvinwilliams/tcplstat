@@ -16,15 +16,18 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_3_0[] = "0.3.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_3_0 ;
+char    __TCPLSTAT_VERSION_0_4_0[] = "0.4.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_4_0 ;
 
+/* 显示版本 */
 static void version()
 {
 	printf( "tcplstat v%s build %s %s\n" , __TCPLSTAT_VERSION , __DATE__ , __TIME__ );
+	printf( "copyright by calvin<calvinwilliams@163.com> 2018\n" );
 	return;
 }
 
+/* 显示命令行语法 */
 static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
@@ -39,6 +42,7 @@ static void usage()
 	return;
 }
 
+/* 入口 */
 int main( int argc , char *argv[] )
 {
 	struct TcplStatEnv	*p_env = NULL ;
@@ -50,14 +54,16 @@ int main( int argc , char *argv[] )
 	
 	int			nret = 0 ;
 	
-	setbuf( stdout , NULL );
-	
 	if( argc == 1 )
 	{
 		usage();
 		exit(0);
 	}
 	
+	/* 禁用标准输出缓存 */
+	setbuf( stdout , NULL );
+	
+	/* 分配内存以存放环境结构 */
 	p_env = (struct TcplStatEnv *)malloc( sizeof(struct TcplStatEnv) ) ;
 	if( p_env == NULL )
 	{
@@ -66,6 +72,7 @@ int main( int argc , char *argv[] )
 	}
 	memset( p_env , 0x00 , sizeof(struct TcplStatEnv) );
 	
+	/* 解析命令行参数 */
 	for( i = 1 ; i < argc ; i++ )
 	{
 		if( STRCMP( argv[i] , == , "-v" ) )
@@ -176,6 +183,7 @@ int main( int argc , char *argv[] )
 	if( p_env->cmd_line_para.filter_string == NULL )
 		p_env->cmd_line_para.filter_string = "" ;
 	
+	/* 得到网络设备信息 */
 	nret = pcap_lookupnet( p_env->cmd_line_para.network_interface , & net , & net_mask , p_env->pcap_errbuf ) ;
 	if( nret == -1 )
 	{
@@ -184,6 +192,7 @@ int main( int argc , char *argv[] )
 		return 1;
 	}
 	
+	/* 打开网络设备 */
 	p_env->pcap = pcap_open_live( p_env->cmd_line_para.network_interface , 65535 , 1 , 1000 , p_env->pcap_errbuf ) ;
 	if( p_env->pcap == NULL )
 	{
@@ -192,6 +201,7 @@ int main( int argc , char *argv[] )
 		return 1;
 	}
 	
+	/* 编译嗅探规则 */
 	memset( & pcap_filter , 0x00 , sizeof(struct bpf_program) );
 	nret = pcap_compile( p_env->pcap , & pcap_filter , p_env->cmd_line_para.filter_string , 0 , net_mask ) ;
 	if( nret == -1 )
@@ -202,6 +212,7 @@ int main( int argc , char *argv[] )
 		return 1;
 	}
 	
+	/* 设置嗅探规则 */
 	nret = pcap_setfilter( p_env->pcap , & pcap_filter ) ;
 	if( nret == -1 )
 	{
@@ -211,10 +222,13 @@ int main( int argc , char *argv[] )
 		return 1;
 	}
 	
+	/* 进入嗅探主循环，捕获TCP包后调用回调函数 */
 	pcap_loop( p_env->pcap , -1 , PcapCallback , (u_char *)p_env );
 	
+	/* 关闭网络设备 */
 	pcap_close( p_env->pcap );
 	
+	/* 释放环境结构 */
 	free( p_env );
 	
 	return 0;

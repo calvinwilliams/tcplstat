@@ -8,6 +8,7 @@
 
 #include "tcplstat_in.h"
 
+/* 网络设备嗅探回调函数 */
 void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_char *packet )
 {
 	struct TcplStatEnv		*p_env = (struct TcplStatEnv *)args ;
@@ -26,6 +27,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	
 	int				nret = 0 ;
 	
+	/* pcap时间戳在虚拟机里有BUG，复制出来修正后再使用 */
 	COPY_TIMEVAL( p_env->fixed_timestamp , pcaphdr->ts )
 	
 	/* Fixed a bug about pcap */
@@ -34,6 +36,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 		COPY_TIMEVAL( p_env->fixed_timestamp , p_env->last_fixed_timestamp )
 	}
 	
+	/* 分析链路层类型 */
 	linklayer_header_type = pcap_datalink(p_env->pcap) ;
 	switch( linklayer_header_type )
 	{
@@ -69,6 +72,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	else
 		packet_data_intercepted = NULL ;
 	
+	/* 转换网络地址信息 */
 	memset( & tcpl_addr_hr , 0x00 , sizeof(struct TcplAddrHumanReadable) );
 	if( etherhdr )
 	{
@@ -80,6 +84,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	tcpl_addr_hr.src_port = ntohs(tcphdr->source) ;
 	tcpl_addr_hr.dst_port = ntohs(tcphdr->dest) ;
 	
+	/* 输出事件日志 */
 	if( p_env->cmd_line_para.output_event )
 	{
 		printf( "E | LHT[%d] | SRCMAC[%s] DSTMAC[%s] | SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
@@ -94,6 +99,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 		}
 	}
 	
+	/* 处理TCP包 */
 	nret = ProcessTcpPacket( p_env , pcaphdr , etherhdr , iphdr , tcphdr , & tcpl_addr_hr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_intercepted ) ;
 	if( nret )
 	{

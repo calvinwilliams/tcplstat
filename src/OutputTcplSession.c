@@ -8,7 +8,8 @@
 
 #include "tcplstat_in.h"
 
-void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session )
+/* 输出TCP会话信息 */
+void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_next_tcpl_packet = NULL ;
@@ -19,6 +20,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		double		avg_packet_elapse ;
 		double		avg_oppo_packet_elapse ;
 		
+		/* 计算连接总耗时 */
 		COPY_TIMEVAL( total_elapse , p_env->fixed_timestamp );
 		DIFF_TIMEVAL( total_elapse , p_tcpl_session->begin_timestamp )
 		
@@ -31,6 +33,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		else
 			avg_oppo_packet_elapse = 0 ;
 		
+		/* 输出TCP会话统计信息 */
 		printf( "S | [%s:%d]->[%s:%d] | %ld.%06ld | %ld.%06ld | %ld.%06ld %ld.%06ld , %ld.%06ld %.6lf %ld.%06ld %ld.%06ld %.6lf %ld.%06ld , %ld.%06ld %ld.%06ld %ld.%06ld | %u %u\n"
 			, p_tcpl_session->tcpl_addr_hr.src_ip , p_tcpl_session->tcpl_addr_hr.src_port , p_tcpl_session->tcpl_addr_hr.dst_ip , p_tcpl_session->tcpl_addr_hr.dst_port
 			
@@ -58,6 +61,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	
 	if( p_env->cmd_line_para.output_session_packet )
 	{
+		/* 输出TCP包明细统计信息 */
 		list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node )
 		{
 			char	*direct_string = NULL ;
@@ -88,6 +92,7 @@ void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 			}
 			
+			/* 每输出一条明细，删除一条 */
 			list_del( & (p_tcpl_packet->this_node) );
 			if( p_tcpl_packet->packet_data_intercepted )
 				free( p_tcpl_packet->packet_data_intercepted );

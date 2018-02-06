@@ -8,6 +8,7 @@
 
 #include "tcplstat_in.h"
 
+/* 在TCP包有效载荷中尝试搜索SQL语言 */
 static char *FindSql( char *packet_data_intercepted , uint32_t packet_data_len_intercepted , int *p_sql_len )
 {
 	char		*p1 = NULL ;
@@ -65,6 +66,7 @@ static char *FindSql( char *packet_data_intercepted , uint32_t packet_data_len_i
 	return 0;
 }
 
+/* 新增TCP包到明细链表中 */
 int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
@@ -81,6 +83,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	
 	COPY_TIMEVAL( p_tcpl_packet->timestamp , p_env->fixed_timestamp )
 	
+	/* 统计与上一个TCP包的延迟 */
 	if( ! list_empty( & (p_tcpl_session->tcpl_packets_list.this_node) ) )
 	{
 		p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
@@ -88,6 +91,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		DIFF_TIMEVAL( p_tcpl_packet->last_packet_elapse , p_last_tcpl_packet->timestamp )
 	}
 	
+	/* 统计与上一个反向TCP包的延迟 */
 	if( direction_flag == TCPLPACKET_DIRECTION )
 		p_last_oppo_tcpl_packet = p_tcpl_session->p_recent_oppo_packet ;
 	else
@@ -126,6 +130,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		return -1;
 	}
 	
+	/* TCP包明细挂接到链表中 */
 	list_add_tail( & (p_tcpl_packet->this_node) , & (p_tcpl_session->tcpl_packets_list.this_node) );
 	
 	if( direction_flag == TCPLPACKET_DIRECTION )
@@ -133,6 +138,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	else
 		p_tcpl_session->p_recent_oppo_packet = p_tcpl_packet ;
 	
+	/* 如果不是握手和分手，统计正向/反向的最小、平均和、最大延迟 */
 	if( p_tcpl_session->state == TCPLSESSION_STATE_CONNECTED )
 	{
 		ADD_TIMEVAL( p_tcpl_session->total_packet_elapse_for_avg , p_tcpl_packet->last_packet_elapse )

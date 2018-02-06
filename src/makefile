@@ -16,7 +16,7 @@ c_FILE		=	\
 			PcapCallback.c \
 			ProcessTcpPacket.c \
 			AddTcpPacket.c \
-			DumpTcplSession.c \
+			OutputTcplSession.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall

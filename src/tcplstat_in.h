@@ -27,6 +27,7 @@
 #include "list.h"
 #include "rbtree.h"
 
+/* 公共宏 */
 #ifndef STRCMP
 #define STRCMP(_a_,_C_,_b_) ( strcmp(_a_,_b_) _C_ 0 )
 #define STRNCMP(_a_,_C_,_b_,_n_) ( strncmp(_a_,_b_,_n_) _C_ 0 )
@@ -47,7 +48,18 @@
 #define MEMCMP(_a_,_C_,_b_,_n_) ( memcmp(_a_,_b_,_n_) _C_ 0 )
 #endif
 
+/* 以太网分组头大小 */
 #define SIZE_ETHERNET		14
+
+/* 网络地址信息 */
+#define SET_TCPL_SESSION_ID(_tcpl_session_id_,_client_ip_,_client_port_,_server_ip_,_server_port_) \
+	{ \
+		memset( & (_tcpl_session_id_) , 0x00 , sizeof(struct TcplSessionId) ); \
+		(_tcpl_session_id_).client_ip.s_addr = _client_ip_.s_addr ; \
+		(_tcpl_session_id_).client_port = _client_port_ ; \
+		(_tcpl_session_id_).server_ip.s_addr = _server_ip_.s_addr ; \
+		(_tcpl_session_id_).server_port = _server_port_ ; \
+	} \
 
 struct TcplAddrHumanReadable
 {
@@ -59,15 +71,7 @@ struct TcplAddrHumanReadable
 	int		dst_port ;
 } ;
 
-#define SET_TCPL_SESSION_ID(_tcpl_session_id_,_client_ip_,_client_port_,_server_ip_,_server_port_) \
-	{ \
-		memset( & (_tcpl_session_id_) , 0x00 , sizeof(struct TcplSessionId) ); \
-		(_tcpl_session_id_).client_ip.s_addr = _client_ip_.s_addr ; \
-		(_tcpl_session_id_).client_port = _client_port_ ; \
-		(_tcpl_session_id_).server_ip.s_addr = _server_ip_.s_addr ; \
-		(_tcpl_session_id_).server_port = _server_port_ ; \
-	} \
-
+/* 时间戳操作宏 */
 #define COPY_TIMEVAL(_timeval1_,_timeval2_) \
 	{ \
 		(_timeval1_).tv_sec = (_timeval2_).tv_sec ; \
@@ -109,14 +113,7 @@ struct TcplAddrHumanReadable
 		) _compare_ 0\
 	) \
 
-struct TcplSessionId
-{
-	struct in_addr		client_ip ;
-	uint16_t		client_port ;
-	struct in_addr		server_ip ;
-	uint16_t		server_port ;
-} ;
-
+/* TCP包结构宏 */
 #define TCPLPACKET_DIRECTION		1
 #define TCPLPACKET_OPPO_DIRECTION	2
 
@@ -126,6 +123,7 @@ struct TcplSessionId
 #define TCPLPACKET_FLAG_DAT	3
 #define TCPLPACKET_FLAG_ACK	4
 
+/* TCP包结构宏 */
 #define OUTPUT_PACKET_EVENT(_p_tcpl_session_,_p_tcpl_packet_) \
 	{ \
 		printf( "d |     ADD PACKET OF SESSION[%p] | %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] %s %d\n" \
@@ -138,6 +136,7 @@ struct TcplSessionId
 			, (_p_tcpl_packet_)->packet_data_len_actually ); \
 	} \
 
+/* TCP包结构 */
 struct TcplPacket
 {
 	struct timeval		timestamp ;
@@ -155,6 +154,7 @@ struct TcplPacket
 	struct list_head	this_node ;
 } ;
 
+/* TCP会话宏 */
 #define TCPLSESSION_STATE_DISCONNECTED	0
 #define TCPLSESSION_STATE_CONNECTING	1
 #define TCPLSESSION_STATE_CONNECTED	2
@@ -168,6 +168,7 @@ struct TcplPacket
 #define TCPLSESSION_DISCONNECT_DIRECTION	1
 #define TCPLSESSION_DISCONNECT_OPPO_DIRECTION	2
 
+/* TCP会话操作宏 */
 #define OUTPUT_SESSION_EVENT(_action_,_direction_flag_,_p_tcpl_session_) \
 	{ \
 		printf( "d |     %s SESSION[%p] | [%s:%d]%s[%s:%d] | %s | %c%c\n" \
@@ -177,6 +178,16 @@ struct TcplPacket
 			, (_p_tcpl_session_)->status[0]?(_p_tcpl_session_)->status[0]:'.' , (_p_tcpl_session_)->status[1]?(_p_tcpl_session_)->status[1]:'.' ); \
 	} \
 
+/* 会话ID结构 */
+struct TcplSessionId
+{
+	struct in_addr		client_ip ;
+	uint16_t		client_port ;
+	struct in_addr		server_ip ;
+	uint16_t		server_port ;
+} ;
+
+/* TCP会话结构 */
 struct TcplSession
 {
 	struct TcplSessionId		tcpl_session_id ;
@@ -220,6 +231,7 @@ struct TcplSession
 	struct rb_node			tcplsession_rbnode ;
 } ;
 
+/* 命令行参数 */
 struct CommandLineParameters
 {
 	char			*network_interface ;
@@ -232,11 +244,7 @@ struct CommandLineParameters
 	unsigned char		output_sql ;
 } ;
 
-#define OUTPUT_LEVEL_0		0
-#define OUTPUT_LEVEL_1		1
-#define OUTPUT_LEVEL_2		2
-#define OUTPUT_LEVEL_3		3
-
+/* 环境结构 */
 struct TcplStatEnv
 {
 	struct CommandLineParameters	cmd_line_para ;
@@ -251,22 +259,30 @@ struct TcplStatEnv
 	struct rb_root			tcplsessions_rbtree ;
 } ;
 
+/* 会话结构树 */
 int LinkTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_env , struct TcplSession *p_tcpl_session );
 struct TcplSession *QueryTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_env , struct TcplSession *p_tcpl_session );
 void UnlinkTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_env , struct TcplSession *p_tcpl_session );
 struct TcplSession *TravelTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_env , struct TcplSession *p_tcpl_session );
 void DestroyTcplSessionTree( struct TcplStatEnv *p_tcpl_stat_env );
 
+/* 公共函数 */
 char *memndup( const char *s, size_t n );
 char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode );
 int LengthUtilEndOfText( char *p_curr , char *end );
 int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf );
 
+/* PCAP回调函数 */
 void PcapCallback( u_char *args , const struct pcap_pkthdr *header , const u_char *packet );
 
+/* 处理TCP分组 */
 int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+
+/* 增加TCP包 */
 int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
-void DumpTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );
+
+/* 输出TCP会话和包明细 */
+void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );
 
 #endif
 

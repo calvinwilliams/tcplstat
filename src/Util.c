@@ -8,6 +8,7 @@
 
 #include "tcplstat_in.h"
 
+/* 复制一块内存块 */
 char *memndup( const char *s, size_t n )
 {
 	char	*p = NULL ;
@@ -20,6 +21,8 @@ char *memndup( const char *s, size_t n )
 	return p;
 }
 
+/* 在内存块中查询字符串 */
+/* binary_mode标志是否能进入二进制数据区域 */
 char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode )
 {
 	char	*p_match = NULL ;
@@ -59,6 +62,7 @@ char *memistr2_region( char *p_curr , char *find , char *end , unsigned char bin
 	return NULL;
 }
 
+/* 获得可见字符串有效长度 */
 int LengthUtilEndOfText( char *p_curr , char *end )
 {
 	char	*p = NULL ;
@@ -75,6 +79,7 @@ int LengthUtilEndOfText( char *p_curr , char *end )
 	return p-p_curr+1;
 }
 
+/* 输出十六进制格式的数据 */
 int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf )
 {
 	FILE		*fp = NULL ;
