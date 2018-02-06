@@ -16,8 +16,8 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_4_0[] = "0.4.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_4_0 ;
+char    __TCPLSTAT_VERSION_0_5_0[] = "0.5.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_5_0 ;
 
 /* 显示版本 */
 static void version()
@@ -32,7 +32,7 @@ static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
 	printf( "                 -l\n" );
-	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ]\n" );
+	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ] [ --log-file (pathfilename) ]\n" );
 	printf( "-o E : Output EVENT\n" );
 	printf( "   S : Output SESSION\n" );
 	printf( "   P : Output PACKET\n" );
@@ -136,6 +136,11 @@ int main( int argc , char *argv[] )
 		{
 			p_env->cmd_line_para.output_sql = 1 ;
 		}
+		else if( STRCMP( argv[i] , == , "--log-file" ) && i + 1 < argc )
+		{
+			p_env->cmd_line_para.log_pathfilename = argv[i+1] ;
+			i++;
+		}
 		else
 		{
 			printf( "***ERROR : invalid command parameter '%s'\n" , argv[i] );
@@ -223,8 +228,32 @@ int main( int argc , char *argv[] )
 		return 1;
 	}
 	
+	/* 打开日志文件 */
+	if( p_env->cmd_line_para.log_pathfilename )
+	{
+		p_env->fp = fopen( p_env->cmd_line_para.log_pathfilename , "a" ) ;
+		if( p_env->fp == NULL )
+		{
+			printf( "*** ERROR : can't open [%s]\n" , p_env->cmd_line_para.log_pathfilename );
+			free( p_env );
+			return 1;
+		}
+		
+		setbuf( p_env->fp , NULL );
+	}
+	else
+	{
+		p_env->fp = stdout ;
+	}
+	
 	/* 进入嗅探主循环，捕获TCP包后调用回调函数 */
 	pcap_loop( p_env->pcap , -1 , PcapCallback , (u_char *)p_env );
+	
+	/* 关闭日志文件 */
+	if( p_env->cmd_line_para.log_pathfilename )
+	{
+		fclose( p_env->fp );
+	}
 	
 	/* 关闭网络设备 */
 	pcap_close( p_env->pcap );

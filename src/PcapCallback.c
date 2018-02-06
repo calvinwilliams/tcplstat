@@ -87,7 +87,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	/* 输出事件日志 */
 	if( p_env->cmd_line_para.output_event )
 	{
-		printf( "E | LHT[%d] | SRCMAC[%s] DSTMAC[%s] | SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
+		fprintf( p_env->fp , "E | LHT[%d] | SRCMAC[%s] DSTMAC[%s] | SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
 			, linklayer_header_type
 			, tcpl_addr_hr.src_mac , tcpl_addr_hr.dst_mac
 			, tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
@@ -103,7 +103,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	nret = ProcessTcpPacket( p_env , pcaphdr , etherhdr , iphdr , tcphdr , & tcpl_addr_hr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_intercepted ) ;
 	if( nret )
 	{
-		printf( "*** ERROR : ProcessTcpPacket failed[%d]\n" , nret );
+		fprintf( p_env->fp , "*** ERROR : ProcessTcpPacket failed[%d]\n" , nret );
 		exit(-nret);
 	}
 	

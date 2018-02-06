@@ -30,13 +30,13 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			/* 重复收到SYN包 */
 			if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN )
 			{
-				printf( "*** WARN : [%s:%d]->[%s:%d] SYN DUPLICATED\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
+				fprintf( p_env->fp , "*** WARN : [%s:%d]->[%s:%d] SYN DUPLICATED\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 				return 0;
 			}
 			/* 未曾收到SYN包而莫名其妙建立的会话，后又收到SYN包 */
 			else
 			{
-				printf( "*** ERROR : [%s:%d]->[%s:%d] status invalid\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
+				fprintf( p_env->fp , "*** ERROR : [%s:%d]->[%s:%d] status invalid\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 				UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
 				free( p_tcpl_session );
 				return -1;
@@ -52,7 +52,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				/* 重复收到SYN包 */
 				if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN )
 				{
-					printf( "*** WARN : [%s:%d]->[%s:%d] REVERSE SYN DUPLICATED\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
+					fprintf( p_env->fp , "*** WARN : [%s:%d]->[%s:%d] REVERSE SYN DUPLICATED\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 					return 0;
 				}
 				
@@ -79,7 +79,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				p_tcpl_session = (struct TcplSession *)malloc( sizeof(struct TcplSession) ) ;
 				if( p_tcpl_session == NULL )
 				{
-					printf( "*** ERROR : alloc failed , errno[%d]\n" , errno );
+					fprintf( p_env->fp , "*** ERROR : alloc failed , errno[%d]\n" , errno );
 					exit(1);
 				}
 				memset( p_tcpl_session , 0x00 , sizeof(struct TcplSession) );
@@ -386,7 +386,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			p_tcpl_session = (struct TcplSession *)malloc( sizeof(struct TcplSession) ) ;
 			if( p_tcpl_session == NULL )
 			{
-				printf( "*** ERROR : alloc failed , errno[%d]\n" , errno );
+				fprintf( p_env->fp , "*** ERROR : alloc failed , errno[%d]\n" , errno );
 				exit(1);
 			}
 			memset( p_tcpl_session , 0x00 , sizeof(struct TcplSession) );

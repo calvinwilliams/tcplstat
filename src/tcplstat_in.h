@@ -242,12 +242,14 @@ struct CommandLineParameters
 	unsigned char		output_session_packet ;
 	unsigned char		output_session_packet_data ;
 	unsigned char		output_sql ;
+	char			*log_pathfilename ;
 } ;
 
 /* 环境结构 */
 struct TcplStatEnv
 {
 	struct CommandLineParameters	cmd_line_para ;
+	FILE				*fp ;
 	
 	char				pcap_errbuf[ PCAP_ERRBUF_SIZE ] ;
 	pcap_t				*pcap ;

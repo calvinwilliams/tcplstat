@@ -76,7 +76,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	p_tcpl_packet = (struct TcplPacket *)malloc( sizeof(struct TcplPacket) ) ;
 	if( p_tcpl_packet == NULL )
 	{
-		printf( "*** ERROR : alloc failed , errno[%d]\n" , errno );
+		fprintf( p_env->fp , "*** ERROR : alloc failed , errno[%d]\n" , errno );
 		exit(1);
 	}
 	memset( p_tcpl_packet , 0x00 , sizeof(struct TcplPacket) );
@@ -100,19 +100,20 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	{
 		COPY_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , p_tcpl_packet->timestamp );
 		DIFF_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , p_last_oppo_tcpl_packet->timestamp )
-		
-		if( p_env->cmd_line_para.output_sql )
+	}
+	
+	/* 嗅探SQL语言，在下次有效荷载时统计耗时并输出 */
+	if( p_env->cmd_line_para.output_sql && packet_data_len_intercepted > 0 )
+	{
+		if( p_tcpl_session->sql )
 		{
-			if( p_tcpl_session->sql )
-			{
-				printf( "Q | %ld.%06ld %.*s\n" , p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec , p_tcpl_session->sql_len , p_tcpl_session->sql );
-				p_tcpl_session->sql = NULL ;
-			}
-			
-			if( packet_data_intercepted )
-			{
-				p_tcpl_session->sql = FindSql( packet_data_intercepted , packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
-			}
+			fprintf( p_env->fp , "Q | %ld.%06ld %.*s\n" , p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec , p_tcpl_session->sql_len , p_tcpl_session->sql );
+			p_tcpl_session->sql = NULL ;
+		}
+		
+		if( packet_data_intercepted )
+		{
+			p_tcpl_session->sql = FindSql( packet_data_intercepted , packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
 		}
 	}
 	
@@ -125,7 +126,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		p_tcpl_packet->packet_data_intercepted = memndup( packet_data_intercepted , packet_data_len_intercepted ) ;
 	if( p_tcpl_packet == NULL )
 	{
-		printf( "*** ERROR : alloc tcpl_packet failed , errno[%d]\n" , errno );
+		fprintf( p_env->fp , "*** ERROR : alloc tcpl_packet failed , errno[%d]\n" , errno );
 		free( p_tcpl_packet );
 		return -1;
 	}

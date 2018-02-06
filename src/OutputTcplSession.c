@@ -34,7 +34,7 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 			avg_oppo_packet_elapse = 0 ;
 		
 		/* 输出TCP会话统计信息 */
-		printf( "S | [%s:%d]->[%s:%d] | %ld.%06ld | %ld.%06ld | %ld.%06ld %ld.%06ld , %ld.%06ld %.6lf %ld.%06ld %ld.%06ld %.6lf %ld.%06ld , %ld.%06ld %ld.%06ld %ld.%06ld | %u %u\n"
+		fprintf( p_env->fp , "S | [%s:%d]->[%s:%d] | %ld.%06ld | %ld.%06ld | %ld.%06ld %ld.%06ld , %ld.%06ld %.6lf %ld.%06ld %ld.%06ld %.6lf %ld.%06ld , %ld.%06ld %ld.%06ld %ld.%06ld | %u %u\n"
 			, p_tcpl_session->tcpl_addr_hr.src_ip , p_tcpl_session->tcpl_addr_hr.src_port , p_tcpl_session->tcpl_addr_hr.dst_ip , p_tcpl_session->tcpl_addr_hr.dst_port
 			
 			, p_tcpl_session->begin_timestamp.tv_sec , p_tcpl_session->begin_timestamp.tv_usec
@@ -71,7 +71,7 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 			else
 				direct_string = "<-" ;
 			
-			printf( "P |     %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] | %s %u\n"
+			fprintf( p_env->fp , "P |     %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] | %s %u\n"
 				, p_tcpl_packet->timestamp.tv_sec , p_tcpl_packet->timestamp.tv_usec
 				
 				, p_tcpl_packet->last_packet_elapse.tv_sec , p_tcpl_packet->last_packet_elapse.tv_usec
