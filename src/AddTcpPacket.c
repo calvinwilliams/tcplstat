@@ -8,6 +8,63 @@
 
 #include "tcplstat_in.h"
 
+static char *FindSql( char *packet_data_intercepted , uint32_t packet_data_len_intercepted , int *p_sql_len )
+{
+	char		*p1 = NULL ;
+	char		*p2 = NULL ;
+	char		*end = packet_data_intercepted + packet_data_len_intercepted - 1 ;
+	
+	p1 = memistr2_region( packet_data_intercepted , "SELECT" , end , 1 ) ;
+	if( p1 )
+	{
+		p2 = memistr2_region( p1+6 , "FROM" , end , 0 ) ;
+		if( p2 )
+		{
+			(*p_sql_len) = LengthUtilEndOfText( p2+4 , end ) ;
+			(*p_sql_len) += p2-p1 + 4 ;
+			return p1;
+		}
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "UPDATE" , end , 1 ) ;
+	if( p1 )
+	{
+		p2 = memistr2_region( p1+6 , "SET" , end , 0 ) ;
+		if( p2 )
+		{
+			(*p_sql_len) = LengthUtilEndOfText( p2+3 , end ) ;
+			(*p_sql_len) += p2-p1 + 3 ;
+			return p1;
+		}
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "INSERT" , end , 1 ) ;
+	if( p1 )
+	{
+		p2 = memistr2_region( p1+7 , "INFO" , end , 0 ) ;
+		if( p2 )
+		{
+			(*p_sql_len) = LengthUtilEndOfText( p2+4 , end ) ;
+			(*p_sql_len) += p2-p1 + 4 ;
+			return p1;
+		}
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "DELETE" , end , 1 ) ;
+	if( p1 )
+	{
+		p2 = memistr2_region( p1+6 , "FROM" , end , 0 ) ;
+		if( p2 )
+		{
+			(*p_sql_len) = LengthUtilEndOfText( p2+4 , end ) ;
+			(*p_sql_len) += p2-p1 + 4 ;
+			return p1;
+		}
+	}
+	
+	return 0;
+}
+
 int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
@@ -39,6 +96,20 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	{
 		COPY_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , p_tcpl_packet->timestamp );
 		DIFF_TIMEVAL( p_tcpl_packet->last_oppo_packet_elapse , p_last_oppo_tcpl_packet->timestamp )
+		
+		if( p_env->cmd_line_para.output_sql )
+		{
+			if( p_tcpl_session->sql )
+			{
+				printf( "Q | %ld.%06ld %.*s\n" , p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec , p_tcpl_session->sql_len , p_tcpl_session->sql );
+				p_tcpl_session->sql = NULL ;
+			}
+			
+			if( packet_data_intercepted )
+			{
+				p_tcpl_session->sql = FindSql( packet_data_intercepted , packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
+			}
+		}
 	}
 	
 	p_tcpl_packet->direction_flag = direction_flag ;

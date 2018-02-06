@@ -29,7 +29,12 @@ static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
 	printf( "                 -l\n" );
-	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [dESPD] ]\n" );
+	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ]\n" );
+	printf( "-o E : EVENT\n" );
+	printf( "   S : SESSION\n" );
+	printf( "   P : PACKET\n" );
+	printf( "   D : PACKET DATA\n" );
+	printf( "   d : DEBUG\n" );
 	printf( "NOTICE : See pcap-filter(7) for the syntax of filter\n" );
 	return;
 }
@@ -118,6 +123,10 @@ int main( int argc , char *argv[] )
 			if( strchr( argv[i+1] , 'D' ) )
 				p_env->cmd_line_para.output_session_packet_data = 1 ;
 			i++;
+		}
+		else if( STRCMP( argv[i] , == , "--sql" ) )
+		{
+			p_env->cmd_line_para.output_sql = 1 ;
 		}
 		else
 		{

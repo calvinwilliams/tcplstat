@@ -19,6 +19,7 @@
 #include <net/ethernet.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <ctype.h>
 
 #include "pcap/pcap.h"
 #include "pcap/sll.h"
@@ -213,6 +214,9 @@ struct TcplSession
 	uint32_t			total_packet_count ;
 	uint32_t			total_packet_data_len ;
 	
+	char				*sql ;
+	int				sql_len ;
+	
 	struct rb_node			tcplsession_rbnode ;
 } ;
 
@@ -225,6 +229,7 @@ struct CommandLineParameters
 	unsigned char		output_session ;
 	unsigned char		output_session_packet ;
 	unsigned char		output_session_packet_data ;
+	unsigned char		output_sql ;
 } ;
 
 #define OUTPUT_LEVEL_0		0
@@ -253,6 +258,8 @@ struct TcplSession *TravelTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_e
 void DestroyTcplSessionTree( struct TcplStatEnv *p_tcpl_stat_env );
 
 char *memndup( const char *s, size_t n );
+char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode );
+int LengthUtilEndOfText( char *p_curr , char *end );
 int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf );
 
 void PcapCallback( u_char *args , const struct pcap_pkthdr *header , const u_char *packet );

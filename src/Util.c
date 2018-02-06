@@ -20,6 +20,61 @@ char *memndup( const char *s, size_t n )
 	return p;
 }
 
+char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode )
+{
+	char	*p_match = NULL ;
+	char	*bak = NULL ;
+	
+	while( p_curr <= end )
+	{
+		if( binary_mode == 0 && ! isprint(*p_curr) )
+			break;
+		
+		if( p_match == NULL )
+		{
+			if( toupper(*p_curr) == toupper(*find) )
+			{
+				p_match = find + 1 ;
+				bak = p_curr ;
+			}
+		}
+		else
+		{
+			if( toupper(*p_curr) == toupper(*p_match) )
+			{
+				p_match++;
+				if( (*p_match) == '\0' )
+					return bak;
+			}
+			else
+			{
+				p_match = NULL ;
+				p_curr = bak ;
+			}
+		}
+		
+		p_curr++;
+	}
+	
+	return NULL;
+}
+
+int LengthUtilEndOfText( char *p_curr , char *end )
+{
+	char	*p = NULL ;
+	
+	for( p = p_curr ; p <= end ; p++ )
+	{
+		if( ! isprint(*p) )
+		{
+			p--;
+			break;
+		}
+	}
+	
+	return p-p_curr+1;
+}
+
 int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf )
 {
 	FILE		*fp = NULL ;

@@ -327,9 +327,38 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 			}
 		}
+		else
+		{
+			p_tcpl_session = (struct TcplSession *)malloc( sizeof(struct TcplSession) ) ;
+			if( p_tcpl_session == NULL )
+			{
+				printf( "*** ERROR : alloc failed , errno[%d]\n" , errno );
+				exit(1);
+			}
+			memset( p_tcpl_session , 0x00 , sizeof(struct TcplSession) );
+			
+			SET_TCPL_SESSION_ID( p_tcpl_session->tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+			memcpy( & (p_tcpl_session->tcpl_addr_hr) , p_tcpl_addr_hr , sizeof(struct TcplAddrHumanReadable) );
+			COPY_TIMEVAL( p_tcpl_session->begin_timestamp , p_env->fixed_timestamp )
+			p_tcpl_session->state = TCPLSESSION_STATE_CONNECTED ;
+			p_tcpl_session->status[0] = TCPLSESSION_STATUS_SYN ;
+			p_tcpl_session->status[1] = TCPLSESSION_STATUS_SYN ;
+			INIT_LIST_HEAD( & (p_tcpl_session->tcpl_packets_list.this_node) );
+			
+			if( p_env->cmd_line_para.output_debug )
+				OUTPUT_SESSION_EVENT( "ADD" , TCPLPACKET_DIRECTION , p_tcpl_session )
+			
+			nret = LinkTcplSessionTreeNode( p_env , p_tcpl_session ) ;
+			if( nret )
+				return nret;
+			
+			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+			if( nret )
+				return nret;
+			
+			return 0;
+		}
 	}
-	
-	printf( "*** ERROR : [%s:%d]->[%s:%d] unknow tcp packet\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 	
 	return 0;
 }
