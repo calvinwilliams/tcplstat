@@ -84,9 +84,9 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	COPY_TIMEVAL( p_tcpl_packet->timestamp , p_env->fixed_timestamp )
 	
 	/* 统计与上一个TCP包的延迟 */
-	if( ! list_empty( & (p_tcpl_session->tcpl_packets_list.this_node) ) )
+	if( ! list_empty( & (p_tcpl_session->tcpl_packets_trace_list.this_node) ) )
 	{
-		p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+		p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 		COPY_TIMEVAL( p_tcpl_packet->last_packet_elapse , p_tcpl_packet->timestamp );
 		DIFF_TIMEVAL( p_tcpl_packet->last_packet_elapse , p_last_tcpl_packet->timestamp )
 	}
@@ -107,7 +107,10 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	{
 		if( p_tcpl_session->sql )
 		{
-			fprintf( p_env->fp , "Q | %ld.%06ld %.*s\n" , p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec , p_tcpl_session->sql_len , p_tcpl_session->sql );
+			fprintf( p_env->fp , "Q | %s.%06ld %ld.%06ld | %.*s\n"
+				, ConvDateTimeHumanReadable(p_last_oppo_tcpl_packet->timestamp.tv_sec) , p_last_oppo_tcpl_packet->timestamp.tv_usec
+				, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
+				, p_tcpl_session->sql_len , p_tcpl_session->sql );
 			p_tcpl_session->sql = NULL ;
 		}
 		
@@ -132,7 +135,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	}
 	
 	/* TCP包明细挂接到链表中 */
-	list_add_tail( & (p_tcpl_packet->this_node) , & (p_tcpl_session->tcpl_packets_list.this_node) );
+	list_add_tail( & (p_tcpl_packet->this_node) , & (p_tcpl_session->tcpl_packets_trace_list.this_node) );
 	
 	if( direction_flag == TCPLPACKET_DIRECTION )
 		p_tcpl_session->p_recent_packet = p_tcpl_packet ;
@@ -168,8 +171,8 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 			COPY_TIMEVAL( p_tcpl_session->max_oppo_packet_elapse , p_tcpl_packet->last_oppo_packet_elapse )
 		}
 		
-		p_tcpl_session->total_packet_count++;
-		p_tcpl_session->total_packet_data_len += packet_data_len_actually ;
+		p_tcpl_session->total_packet_trace_count++;
+		p_tcpl_session->total_packet_trace_data_len += packet_data_len_actually ;
 	}
 	
 	if( p_env->cmd_line_para.output_debug )

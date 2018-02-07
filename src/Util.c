@@ -79,6 +79,17 @@ int LengthUtilEndOfText( char *p_curr , char *end )
 	return p-p_curr+1;
 }
 
+char *ConvDateTimeHumanReadable( time_t tt )
+{
+	struct tm	tm ;
+	static char	date_time_buf[ 19 + 1 ] ;
+	
+	localtime_r( & tt , & tm ) ;
+	sprintf( date_time_buf , "%04d-%02d-%02dT%02d:%02d:%02d" , tm.tm_year+1900 , tm.tm_mon+1 , tm.tm_mday , tm.tm_hour , tm.tm_min , tm.tm_sec );
+	
+	return date_time_buf;
+}
+
 /* 输出十六进制格式的数据 */
 int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf )
 {

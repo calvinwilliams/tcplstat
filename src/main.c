@@ -16,8 +16,8 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_5_0[] = "0.5.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_5_0 ;
+char    __TCPLSTAT_VERSION_0_6_0[] = "0.6.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_6_0 ;
 
 /* 显示版本 */
 static void version()
@@ -32,7 +32,7 @@ static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
 	printf( "                 -l\n" );
-	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ] [ --log-file (pathfilename) ]\n" );
+	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ --max-packet-trace-count ] [ -o [ESPDd] ] [ --sql ] [ --log-file (pathfilename) ]\n" );
 	printf( "-o E : Output EVENT\n" );
 	printf( "   S : Output SESSION\n" );
 	printf( "   P : Output PACKET\n" );
@@ -118,6 +118,11 @@ int main( int argc , char *argv[] )
 			p_env->cmd_line_para.filter_string = argv[i+1] ;
 			i++;
 		}
+		else if( STRCMP( argv[i] , == , "--max-packet-trace-count" ) && i + 1 < argc )
+		{
+			p_env->cmd_line_para.max_packet_trace_count = atoi(argv[i+1]) ;
+			i++;
+		}
 		else if( STRCMP( argv[i] , == , "-o" ) )
 		{
 			if( strchr( argv[i+1] , 'd' ) )
@@ -188,6 +193,9 @@ int main( int argc , char *argv[] )
 	
 	if( p_env->cmd_line_para.filter_string == NULL )
 		p_env->cmd_line_para.filter_string = "" ;
+	
+	if( p_env->cmd_line_para.max_packet_trace_count <= 0 )
+		p_env->cmd_line_para.max_packet_trace_count = TCPLSESSION_MAX_PACKET_TRACE_COUNT ;
 	
 	/* 得到网络设备信息 */
 	nret = pcap_lookupnet( p_env->cmd_line_para.network_interface , & net , & net_mask , p_env->pcap_errbuf ) ;

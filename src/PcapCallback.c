@@ -87,15 +87,20 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	/* 输出事件日志 */
 	if( p_env->cmd_line_para.output_event )
 	{
-		fprintf( p_env->fp , "E | LHT[%d] | SRCMAC[%s] DSTMAC[%s] | SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
+		fprintf( p_env->fp , "E | %s.%06ld | LHT[%d] | SRCMAC[%s] DSTMAC[%s] | SRCIP[%s] DSTIP[%s] | SRCPORT[%d] DSTPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]bytes\n"
+			, ConvDateTimeHumanReadable(p_env->fixed_timestamp.tv_sec) , p_env->fixed_timestamp.tv_usec
 			, linklayer_header_type
 			, tcpl_addr_hr.src_mac , tcpl_addr_hr.dst_mac
 			, tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
 			, tcpl_addr_hr.src_port , tcpl_addr_hr.dst_port , tcphdr->seq , tcphdr->ack_seq , tcphdr->syn , tcphdr->ack , tcphdr->fin , tcphdr->psh , tcphdr->rst , tcphdr->urg
 			, packet_data_len_intercepted );
-		if( packet_data_len_intercepted > 0 )
+		
+		if( p_env->cmd_line_para.output_session_packet_data )
 		{
-			DumpBuffer( "E |     " , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
+			if( packet_data_len_intercepted > 0 )
+			{
+				DumpBuffer( "E |     " , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
+			}
 		}
 	}
 	

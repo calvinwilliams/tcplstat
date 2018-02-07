@@ -57,7 +57,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 				
 				/* 统计发出SYN后收到SYN+ACK的延迟 */
-				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				COPY_TIMEVAL( p_tcpl_session->wait_for_second_syn_and_first_ack_elapse , p_env->fixed_timestamp );
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_second_syn_and_first_ack_elapse , p_last_tcpl_packet->timestamp )
 				
@@ -89,7 +89,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				COPY_TIMEVAL( p_tcpl_session->begin_timestamp , p_env->fixed_timestamp )
 				p_tcpl_session->state = TCPLSESSION_STATE_CONNECTING ;
 				p_tcpl_session->status[0] = TCPLSESSION_STATUS_SYN ;
-				INIT_LIST_HEAD( & (p_tcpl_session->tcpl_packets_list.this_node) );
+				INIT_LIST_HEAD( & (p_tcpl_session->tcpl_packets_trace_list.this_node) );
 				
 				if( p_env->cmd_line_para.output_debug )
 					OUTPUT_SESSION_EVENT( "ADD" , TCPLPACKET_DIRECTION , p_tcpl_session )
@@ -123,7 +123,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				return 0;
 			}
 			
-			p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+			p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 			if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN )
 			{
 				/* 反向先发送FIN包 */
@@ -167,7 +167,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					return 0;
 				}
 				
-				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN )
 				{
 					/* 正向先发送FIN包 */
@@ -211,7 +211,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		if( p_tcpl_session )
 		{
 			/* 统计第一个FIN包延迟 */
-			p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+			p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 			COPY_TIMEVAL( p_tcpl_session->wait_for_first_fin_elapse , p_env->fixed_timestamp );
 			DIFF_TIMEVAL( p_tcpl_session->wait_for_first_fin_elapse , p_last_tcpl_packet->timestamp )
 			
@@ -242,7 +242,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			if( p_tcpl_session )
 			{
 				/* 统计第一个FIN包延迟 */
-				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				COPY_TIMEVAL( p_tcpl_session->wait_for_first_fin_elapse , p_env->fixed_timestamp );
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_first_fin_elapse , p_last_tcpl_packet->timestamp )
 				
@@ -280,7 +280,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			
 			if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_CONNECTING )
 			{
-				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				COPY_TIMEVAL( p_tcpl_session->wait_for_after_syn_and_second_ack_elapse , p_env->fixed_timestamp );
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_after_syn_and_second_ack_elapse , p_last_tcpl_packet->timestamp )
 			}
@@ -298,6 +298,12 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			if( p_env->cmd_line_para.output_debug )
 				OUTPUT_SESSION_EVENT( "MODIFY" , TCPLPACKET_DIRECTION , p_tcpl_session )
 			
+			if( p_tcpl_session->total_packet_trace_count >= p_env->cmd_line_para.max_packet_trace_count )
+			{
+				/* 输出TCP会话信息 */
+				OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+			}
+			
 			return 0;
 		}
 		else if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_FIN && p_tcpl_session->status[1] == TCPLSESSION_STATUS_FIN )
@@ -305,7 +311,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			/* 收到四步分手的最后一个ACK */
 			if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_DISCONNECTING && p_tcpl_session->disconnect_direction == TCPLSESSION_DISCONNECT_DIRECTION )
 			{
-				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				COPY_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_env->fixed_timestamp );
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_last_tcpl_packet->timestamp )
 				
@@ -347,6 +353,12 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				if( p_env->cmd_line_para.output_debug )
 					OUTPUT_SESSION_EVENT( "MODIFY" , TCPLPACKET_OPPO_DIRECTION , p_tcpl_session )
 				
+				if( p_tcpl_session->total_packet_trace_count >= p_env->cmd_line_para.max_packet_trace_count )
+				{
+					/* 输出TCP会话信息 */
+					OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+				}
+				
 				return 0;
 			}
 			else if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_FIN && p_tcpl_session->status[0] == TCPLSESSION_STATUS_FIN )
@@ -354,7 +366,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				/* 收到四步分手的最后一个ACK */
 				if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_DISCONNECTING && p_tcpl_session->disconnect_direction == TCPLSESSION_DISCONNECT_OPPO_DIRECTION )
 				{
-					p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_list.this_node) , struct TcplPacket , this_node ) ;
+					p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 					COPY_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_env->fixed_timestamp );
 					DIFF_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_last_tcpl_packet->timestamp )
 					
@@ -397,7 +409,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			p_tcpl_session->state = TCPLSESSION_STATE_CONNECTED ;
 			p_tcpl_session->status[0] = TCPLSESSION_STATUS_SYN ;
 			p_tcpl_session->status[1] = TCPLSESSION_STATUS_SYN ;
-			INIT_LIST_HEAD( & (p_tcpl_session->tcpl_packets_list.this_node) );
+			INIT_LIST_HEAD( & (p_tcpl_session->tcpl_packets_trace_list.this_node) );
 			
 			if( p_env->cmd_line_para.output_debug )
 				OUTPUT_SESSION_EVENT( "ADD" , TCPLPACKET_DIRECTION , p_tcpl_session )

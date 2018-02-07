@@ -126,9 +126,9 @@ struct TcplAddrHumanReadable
 /* TCP包结构宏 */
 #define OUTPUT_PACKET_EVENT(_p_tcpl_session_,_p_tcpl_packet_) \
 	{ \
-		printf( "d |     ADD PACKET OF SESSION[%p] | %ld.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] %s %d\n" \
+		printf( "d |     ADD PACKET OF SESSION[%p] | %s.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] %s %d\n" \
 			, (_p_tcpl_session_) \
-			, (_p_tcpl_packet_)->timestamp.tv_sec , (_p_tcpl_packet_)->timestamp.tv_usec \
+			, ConvDateTimeHumanReadable((_p_tcpl_packet_)->timestamp.tv_sec) , (_p_tcpl_packet_)->timestamp.tv_usec \
 			, (_p_tcpl_packet_)->last_packet_elapse.tv_sec , (_p_tcpl_packet_)->last_packet_elapse.tv_usec \
 			, (_p_tcpl_packet_)->last_oppo_packet_elapse.tv_sec , (_p_tcpl_packet_)->last_oppo_packet_elapse.tv_usec \
 			, (_p_tcpl_session_)->tcpl_addr_hr.src_ip , (_p_tcpl_session_)->tcpl_addr_hr.src_port , (_p_tcpl_packet_)->direction_flag==TCPLPACKET_DIRECTION?"->":"<-" , (_p_tcpl_session_)->tcpl_addr_hr.dst_ip , (_p_tcpl_session_)->tcpl_addr_hr.dst_port \
@@ -155,14 +155,16 @@ struct TcplPacket
 } ;
 
 /* TCP会话宏 */
-#define TCPLSESSION_STATE_DISCONNECTED	0
-#define TCPLSESSION_STATE_CONNECTING	1
-#define TCPLSESSION_STATE_CONNECTED	2
-#define TCPLSESSION_STATE_DISCONNECTING	3
+#define TCPLSESSION_MAX_PACKET_TRACE_COUNT	100
 
-#define TCPLSESSION_STATUS_CLOSED	0
-#define TCPLSESSION_STATUS_SYN		'S'
-#define TCPLSESSION_STATUS_FIN		'F'
+#define TCPLSESSION_STATE_DISCONNECTED		0
+#define TCPLSESSION_STATE_CONNECTING		1
+#define TCPLSESSION_STATE_CONNECTED		2
+#define TCPLSESSION_STATE_DISCONNECTING		3
+
+#define TCPLSESSION_STATUS_CLOSED		0
+#define TCPLSESSION_STATUS_SYN			'S'
+#define TCPLSESSION_STATUS_FIN			'F'
 
 #define TCPLSESSION_DISCONNECT_WAITFOR		0
 #define TCPLSESSION_DISCONNECT_DIRECTION	1
@@ -171,8 +173,9 @@ struct TcplPacket
 /* TCP会话操作宏 */
 #define OUTPUT_SESSION_EVENT(_action_,_direction_flag_,_p_tcpl_session_) \
 	{ \
-		printf( "d |     %s SESSION[%p] | [%s:%d]%s[%s:%d] | %s | %c%c\n" \
+		printf( "d |     %s SESSION[%p] | %s.%06ld [%s:%d]%s[%s:%d] | %s | %c%c\n" \
 			, (_action_) , (_p_tcpl_session_) \
+			, ConvDateTimeHumanReadable((_p_tcpl_session_)->begin_timestamp.tv_sec) , (_p_tcpl_session_)->begin_timestamp.tv_usec \
 			, (_p_tcpl_session_)->tcpl_addr_hr.src_ip , (_p_tcpl_session_)->tcpl_addr_hr.src_port , (_direction_flag_)==TCPLPACKET_DIRECTION?"->":"<-" , (_p_tcpl_session_)->tcpl_addr_hr.dst_ip , (_p_tcpl_session_)->tcpl_addr_hr.dst_port \
 			, _g_tcplstat_tcplsession_state[(_p_tcpl_session_)->state] \
 			, (_p_tcpl_session_)->status[0]?(_p_tcpl_session_)->status[0]:'.' , (_p_tcpl_session_)->status[1]?(_p_tcpl_session_)->status[1]:'.' ); \
@@ -218,12 +221,14 @@ struct TcplSession
 	unsigned char			status[ 2 ] ;
 	unsigned char			disconnect_direction ;
 	
-	struct TcplPacket		tcpl_packets_list ;
+	struct TcplPacket		tcpl_packets_trace_list ;
 	struct TcplPacket		*p_recent_packet ;
 	struct TcplPacket		*p_recent_oppo_packet ;
 	
-	uint32_t			total_packet_count ;
-	uint32_t			total_packet_data_len ;
+	uint32_t			total_packet_trace_count ;
+	uint32_t			total_packet_trace_data_len ;
+	
+	unsigned char			continue_trace_flag ;
 	
 	char				*sql ;
 	int				sql_len ;
@@ -236,6 +241,7 @@ struct CommandLineParameters
 {
 	char			*network_interface ;
 	char			*filter_string ;
+	int			max_packet_trace_count ;
 	unsigned char		output_debug ;
 	unsigned char		output_event ;
 	unsigned char		output_session ;
@@ -272,6 +278,7 @@ void DestroyTcplSessionTree( struct TcplStatEnv *p_tcpl_stat_env );
 char *memndup( const char *s, size_t n );
 char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode );
 int LengthUtilEndOfText( char *p_curr , char *end );
+char *ConvDateTimeHumanReadable( time_t tt );
 int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf );
 
 /* PCAP回调函数 */
