@@ -61,7 +61,7 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 			, p_tcpl_session->total_packet_trace_count , p_tcpl_session->total_packet_trace_data_len );
 	}
 	
-	/* 输出TCP包明细统计信息 */
+	/* 输出TCP分组明细统计信息 */
 	list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node )
 	{
 		char	*direct_string = NULL ;
@@ -90,16 +90,23 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 			{
 				if( p_tcpl_packet->packet_data_len_intercepted > 0 )
 				{
-					DumpBuffer( "D |     " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
+					DumpBuffer( p_env->fp , "D |     " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
 				}
 			}
 		}
 		
 		/* 每输出一条明细，删除一条 */
-		list_del( & (p_tcpl_packet->this_node) );
-		if( p_tcpl_packet->packet_data_intercepted )
-			free( p_tcpl_packet->packet_data_intercepted );
-		free( p_tcpl_packet );
+		if( p_env->unused_tcpl_packet_count < PENV_MAX_UNUSED_TCPLPACKET_COUNT )
+		{
+			RECYCLING_TCPL_PACKET( p_env , p_tcpl_packet )
+		}
+		else
+		{
+			list_del( & (p_tcpl_packet->this_node) );
+			if( p_tcpl_packet->packet_data_intercepted )
+				free( p_tcpl_packet->packet_data_intercepted );
+			free( p_tcpl_packet );
+		}
 	}
 	
 	p_tcpl_session->total_packet_trace_count = 0 ;

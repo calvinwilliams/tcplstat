@@ -10,7 +10,7 @@
 
 char	*_g_tcplstat_tcplsession_state[] = { "DISCONNECTED" , "CONNECTING" , "CONNECTED" , "DISCONNECTING" } ;
 
-/* 处理TCP包 */
+/* 处理TCP分组 */
 int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
 {
 	struct TcplSession	tcpl_session ;
@@ -19,7 +19,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	
 	int			nret = 0 ;
 	
-	/* 如果TCP包带有SYN标志 */
+	/* 如果TCP分组带有SYN标志 */
 	if( tcphdr->syn == 1 )
 	{
 		/* 查询正向会话ID */
@@ -38,7 +38,14 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			{
 				fprintf( p_env->fp , "*** ERROR : [%s:%d]->[%s:%d] status invalid\n" , p_tcpl_addr_hr->src_ip , p_tcpl_addr_hr->src_port , p_tcpl_addr_hr->dst_ip , p_tcpl_addr_hr->dst_port );
 				UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
-				free( p_tcpl_session );
+				if( p_env->unused_tcpl_session_count < PENV_MAX_UNUSED_TCPLSESSION_COUNT )
+				{
+					RECYCLING_TCPL_SESSION( p_env , p_tcpl_session );
+				}
+				else
+				{
+					free( p_tcpl_session );
+				}
 				return -1;
 			}
 		}
@@ -63,7 +70,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				
 				p_tcpl_session->status[1] = TCPLSESSION_STATUS_SYN ;
 				
-				/* 记录TCP包明细 */
+				/* 记录TCP分组明细 */
 				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
@@ -76,13 +83,20 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			else
 			{
 				/* 未查询到会话，收到第一个SYN包，正常建立会话 */
-				p_tcpl_session = (struct TcplSession *)malloc( sizeof(struct TcplSession) ) ;
-				if( p_tcpl_session == NULL )
+				if( p_env->unused_tcpl_session_count == 0 )
 				{
-					fprintf( p_env->fp , "*** ERROR : alloc failed , errno[%d]\n" , errno );
-					exit(1);
+					p_tcpl_session = (struct TcplSession *)malloc( sizeof(struct TcplSession) ) ;
+					if( p_tcpl_session == NULL )
+					{
+						fprintf( p_env->fp , "*** ERROR : alloc failed , errno[%d]\n" , errno );
+						exit(1);
+					}
+					memset( p_tcpl_session , 0x00 , sizeof(struct TcplSession) );
 				}
-				memset( p_tcpl_session , 0x00 , sizeof(struct TcplSession) );
+				else
+				{
+					REUSE_TCPL_SESSION( p_env , p_tcpl_session )
+				}
 				
 				SET_TCPL_SESSION_ID( p_tcpl_session->tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
 				memcpy( & (p_tcpl_session->tcpl_addr_hr) , p_tcpl_addr_hr , sizeof(struct TcplAddrHumanReadable) );
@@ -99,7 +113,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				if( nret )
 					return nret;
 				
-				/* 记录TCP包明细 */
+				/* 记录TCP分组明细 */
 				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
@@ -109,7 +123,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		}
 	}
 	
-	/* 如果TCP包带有FIN标志 */
+	/* 如果TCP分组带有FIN标志 */
 	if( tcphdr->fin == 1 )
 	{
 		/* 查询正向会话ID */
@@ -145,7 +159,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					p_tcpl_session->disconnect_direction = TCPLSESSION_DISCONNECT_DIRECTION ;
 			}
 			
-			/* 记录TCP包明细 */
+			/* 记录TCP分组明细 */
 			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
@@ -189,7 +203,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 						p_tcpl_session->disconnect_direction = TCPLSESSION_DISCONNECT_OPPO_DIRECTION ;
 				}
 				
-				/* 记录TCP包明细 */
+				/* 记录TCP分组明细 */
 				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
@@ -202,7 +216,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		}
 	}
 	
-	/* 如果TCP包带有RST标志 */
+	/* 如果TCP分组带有RST标志 */
 	if( tcphdr->rst == 1 )
 	{
 		/* 查询正向会话ID */
@@ -217,7 +231,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			
 			p_tcpl_session->state = TCPLSESSION_STATE_DISCONNECTED ;
 			
-			/* 记录TCP包明细 */
+			/* 记录TCP分组明细 */
 			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
@@ -230,7 +244,14 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			
 			/* 从TCP会话树上删除 */
 			UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
-			free( p_tcpl_session );
+			if( p_env->unused_tcpl_session_count < PENV_MAX_UNUSED_TCPLSESSION_COUNT )
+			{
+				RECYCLING_TCPL_SESSION( p_env , p_tcpl_session );
+			}
+			else
+			{
+				free( p_tcpl_session );
+			}
 			
 			return 0;
 		}
@@ -248,7 +269,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				
 				p_tcpl_session->state = TCPLSESSION_STATE_DISCONNECTED ;
 				
-				/* 记录TCP包明细 */
+				/* 记录TCP分组明细 */
 				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
@@ -261,14 +282,21 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				
 				/* 从TCP会话树上删除 */
 				UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
-				free( p_tcpl_session );
+				if( p_env->unused_tcpl_session_count < PENV_MAX_UNUSED_TCPLSESSION_COUNT )
+				{
+					RECYCLING_TCPL_SESSION( p_env , p_tcpl_session );
+				}
+				else
+				{
+					free( p_tcpl_session );
+				}
 				
 				return 0;
 			}
 		}
 	}
 	
-	/* 如果TCP包带有ACK标志或其它标志 */
+	/* 如果TCP分组带有ACK标志或其它标志 */
 	/* 查询正向会话ID */
 	SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
 	p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
@@ -276,7 +304,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	{
 		if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN && p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN )
 		{
-			/* 收到三步握手的最后一个ACK 或者 正常TCP包往来 */
+			/* 收到三步握手的最后一个ACK 或者 正常TCP分组往来 */
 			
 			if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_CONNECTING )
 			{
@@ -285,7 +313,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_after_syn_and_second_ack_elapse , p_last_tcpl_packet->timestamp )
 			}
 			
-			/* 记录TCP包明细 */
+			/* 记录TCP分组明细 */
 			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
@@ -315,7 +343,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				COPY_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_env->fixed_timestamp );
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_last_tcpl_packet->timestamp )
 				
-				/* 记录TCP包明细 */
+				/* 记录TCP分组明细 */
 				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
@@ -330,7 +358,14 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				
 				/* 从TCP会话树上删除 */
 				UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
-				free( p_tcpl_session );
+				if( p_env->unused_tcpl_session_count < PENV_MAX_UNUSED_TCPLSESSION_COUNT )
+				{
+					RECYCLING_TCPL_SESSION( p_env , p_tcpl_session );
+				}
+				else
+				{
+					free( p_tcpl_session );
+				}
 				
 				return 0;
 			}
@@ -343,7 +378,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 		if( p_tcpl_session )
 		{
-			/* 正常TCP包往来 */
+			/* 正常TCP分组往来 */
 			if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN && p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN )
 			{
 				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
@@ -370,7 +405,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					COPY_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_env->fixed_timestamp );
 					DIFF_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_last_tcpl_packet->timestamp )
 					
-					/* 记录TCP包明细 */
+					/* 记录TCP分组明细 */
 					nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 					if( nret )
 						return nret;
@@ -385,7 +420,14 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					
 					/* 从TCP会话树上删除 */
 					UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
-					free( p_tcpl_session );
+					if( p_env->unused_tcpl_session_count < PENV_MAX_UNUSED_TCPLSESSION_COUNT )
+					{
+						RECYCLING_TCPL_SESSION( p_env , p_tcpl_session );
+					}
+					else
+					{
+						free( p_tcpl_session );
+					}
 					
 					return 0;
 				}
@@ -419,7 +461,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			if( nret )
 				return nret;
 			
-			/* 记录TCP包明细 */
+			/* 记录TCP分组明细 */
 			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;

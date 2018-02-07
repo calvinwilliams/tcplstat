@@ -20,6 +20,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <ctype.h>
+#include <signal.h>
 
 #include "pcap/pcap.h"
 #include "pcap/sll.h"
@@ -113,7 +114,7 @@ struct TcplAddrHumanReadable
 		) _compare_ 0\
 	) \
 
-/* TCP包结构宏 */
+/* TCP分组 */
 #define TCPLPACKET_DIRECTION		1
 #define TCPLPACKET_OPPO_DIRECTION	2
 
@@ -123,10 +124,9 @@ struct TcplAddrHumanReadable
 #define TCPLPACKET_FLAG_DAT	3
 #define TCPLPACKET_FLAG_ACK	4
 
-/* TCP包结构宏 */
 #define OUTPUT_PACKET_EVENT(_p_tcpl_session_,_p_tcpl_packet_) \
 	{ \
-		printf( "d |     ADD PACKET OF SESSION[%p] | %s.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] %s %d\n" \
+		fprintf( p_env->fp , "d |     ADD PACKET OF SESSION[%p] | %s.%06ld | %ld.%06ld %ld.%06ld | [%s:%d]%s[%s:%d] %s %d\n" \
 			, (_p_tcpl_session_) \
 			, ConvDateTimeHumanReadable((_p_tcpl_packet_)->timestamp.tv_sec) , (_p_tcpl_packet_)->timestamp.tv_usec \
 			, (_p_tcpl_packet_)->last_packet_elapse.tv_sec , (_p_tcpl_packet_)->last_packet_elapse.tv_usec \
@@ -136,7 +136,31 @@ struct TcplAddrHumanReadable
 			, (_p_tcpl_packet_)->packet_data_len_actually ); \
 	} \
 
-/* TCP包结构 */
+#define RECYCLING_TCPL_PACKET(_p_env_,_p_tcpl_packet_) \
+	{ \
+		if( (_p_tcpl_packet_)->packet_data_intercepted ) \
+			free( (_p_tcpl_packet_)->packet_data_intercepted ); \
+		memset( (_p_tcpl_packet_) , 0x00 , sizeof(struct TcplPacket) ); \
+		list_add_tail( & ((_p_tcpl_packet_)->this_node) , & ((_p_env_)->unused_tcpl_packet.this_node) ); \
+		(_p_env_)->unused_tcpl_packet_count++; \
+		if( (_p_env_)->cmd_line_para.output_debug ) \
+		{ \
+			fprintf( p_env->fp , "d | REUSE TCPL PACKET[%p]\n" , (_p_tcpl_packet_) ); \
+		} \
+	} \
+
+#define REUSE_TCPL_PACKET(_p_env_,_p_tcpl_packet_) \
+	{ \
+		(_p_tcpl_packet_) = list_first_entry( & ((_p_env_)->unused_tcpl_packet.this_node) , struct TcplPacket , this_node ) ; \
+		list_del( & ((_p_tcpl_packet_)->this_node) ); \
+		(_p_env_)->unused_tcpl_packet_count--; \
+		memset( (_p_tcpl_packet_) , 0x00 , sizeof(struct TcplPacket) ); \
+		if( (_p_env_)->cmd_line_para.output_debug ) \
+		{ \
+			fprintf( p_env->fp , "d | RECYCLING TCPL PACKET[%p]\n" , (_p_tcpl_packet_) ); \
+		} \
+	} \
+
 struct TcplPacket
 {
 	struct timeval		timestamp ;
@@ -154,7 +178,16 @@ struct TcplPacket
 	struct list_head	this_node ;
 } ;
 
-/* TCP会话宏 */
+/* 会话ID结构 */
+struct TcplSessionId
+{
+	struct in_addr		client_ip ;
+	uint16_t		client_port ;
+	struct in_addr		server_ip ;
+	uint16_t		server_port ;
+} ;
+
+/* TCP会话 */
 #define TCPLSESSION_MAX_PACKET_TRACE_COUNT	100
 
 #define TCPLSESSION_STATE_DISCONNECTED		0
@@ -170,10 +203,9 @@ struct TcplPacket
 #define TCPLSESSION_DISCONNECT_DIRECTION	1
 #define TCPLSESSION_DISCONNECT_OPPO_DIRECTION	2
 
-/* TCP会话操作宏 */
 #define OUTPUT_SESSION_EVENT(_action_,_direction_flag_,_p_tcpl_session_) \
 	{ \
-		printf( "d |     %s SESSION[%p] | %s.%06ld [%s:%d]%s[%s:%d] | %s | %c%c\n" \
+		fprintf( p_env->fp , "d |     %s SESSION[%p] | %s.%06ld [%s:%d]%s[%s:%d] | %s | %c%c\n" \
 			, (_action_) , (_p_tcpl_session_) \
 			, ConvDateTimeHumanReadable((_p_tcpl_session_)->begin_timestamp.tv_sec) , (_p_tcpl_session_)->begin_timestamp.tv_usec \
 			, (_p_tcpl_session_)->tcpl_addr_hr.src_ip , (_p_tcpl_session_)->tcpl_addr_hr.src_port , (_direction_flag_)==TCPLPACKET_DIRECTION?"->":"<-" , (_p_tcpl_session_)->tcpl_addr_hr.dst_ip , (_p_tcpl_session_)->tcpl_addr_hr.dst_port \
@@ -181,16 +213,30 @@ struct TcplPacket
 			, (_p_tcpl_session_)->status[0]?(_p_tcpl_session_)->status[0]:'.' , (_p_tcpl_session_)->status[1]?(_p_tcpl_session_)->status[1]:'.' ); \
 	} \
 
-/* 会话ID结构 */
-struct TcplSessionId
-{
-	struct in_addr		client_ip ;
-	uint16_t		client_port ;
-	struct in_addr		server_ip ;
-	uint16_t		server_port ;
-} ;
+#define RECYCLING_TCPL_SESSION(_p_env_,_p_tcpl_session_) \
+	{ \
+		memset( (_p_tcpl_session_) , 0x00 , sizeof(struct TcplSession) ); \
+		INIT_LIST_HEAD( & ((_p_tcpl_session_)->tcpl_packets_trace_list.this_node) ); \
+		list_add_tail( & ((_p_tcpl_session_)->this_node) , & ((_p_env_)->unused_tcpl_session.this_node) ); \
+		(_p_env_)->unused_tcpl_session_count++; \
+		if( (_p_env_)->cmd_line_para.output_debug ) \
+		{ \
+			fprintf( p_env->fp , "d | RECYCLING TCPL SESSION[%p]\n" , (_p_tcpl_session_) ); \
+		} \
+	} \
 
-/* TCP会话结构 */
+#define REUSE_TCPL_SESSION(_p_env_,_p_tcpl_session_) \
+	{ \
+		(_p_tcpl_session_) = list_first_entry( & ((_p_env_)->unused_tcpl_session.this_node) , struct TcplSession , this_node ) ; \
+		list_del( & ((_p_tcpl_session_)->this_node) ); \
+		(_p_env_)->unused_tcpl_session_count--; \
+		memset( (_p_tcpl_session_) , 0x00 , sizeof(struct TcplSession) ); \
+		if( (_p_env_)->cmd_line_para.output_debug ) \
+		{ \
+			fprintf( p_env->fp , "d | REUSE TCPL SESSION[%p]\n" , (_p_tcpl_session_) ); \
+		} \
+	} \
+
 struct TcplSession
 {
 	struct TcplSessionId		tcpl_session_id ;
@@ -233,6 +279,7 @@ struct TcplSession
 	char				*sql ;
 	int				sql_len ;
 	
+	struct list_head		this_node ;
 	struct rb_node			tcplsession_rbnode ;
 } ;
 
@@ -252,6 +299,9 @@ struct CommandLineParameters
 } ;
 
 /* 环境结构 */
+#define PENV_MAX_UNUSED_TCPLSESSION_COUNT	10
+#define PENV_MAX_UNUSED_TCPLPACKET_COUNT	100
+
 struct TcplStatEnv
 {
 	struct CommandLineParameters	cmd_line_para ;
@@ -264,7 +314,12 @@ struct TcplStatEnv
 	struct timeval			fixed_timestamp ;
 	struct timeval			last_fixed_timestamp ;
 	
-	struct rb_root			tcplsessions_rbtree ;
+	struct rb_root			tcpl_sessions_rbtree ;
+	
+	struct TcplSession		unused_tcpl_session ;
+	int				unused_tcpl_session_count ;
+	struct TcplPacket		unused_tcpl_packet ;
+	int				unused_tcpl_packet_count ;
 } ;
 
 /* 会话结构树 */
@@ -279,7 +334,7 @@ char *memndup( const char *s, size_t n );
 char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode );
 int LengthUtilEndOfText( char *p_curr , char *end );
 char *ConvDateTimeHumanReadable( time_t tt );
-int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf );
+int DumpBuffer( FILE *fp , char *indentation , char *pathfilename , int buf_len , void *buf );
 
 /* PCAP回调函数 */
 void PcapCallback( u_char *args , const struct pcap_pkthdr *header , const u_char *packet );
@@ -287,7 +342,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *header , const u_cha
 /* 处理TCP分组 */
 int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
 
-/* 增加TCP包 */
+/* 增加TCP分组 */
 int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
 
 /* 输出TCP会话和包明细 */

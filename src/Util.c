@@ -91,34 +91,12 @@ char *ConvDateTimeHumanReadable( time_t tt )
 }
 
 /* 输出十六进制格式的数据 */
-int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf )
+int DumpBuffer( FILE *fp , char *indentation , char *pathfilename , int buf_len , void *buf )
 {
-	FILE		*fp = NULL ;
 	int		lines_offset , bytes_offset ;
 	
 	if( indentation == NULL )
 		indentation = "" ;
-	
-	if( STRCMP( pathfilename , == , "#stdin" ) )
-	{
-		fp = stdout ;
-	}
-	else if( STRCMP( pathfilename , == , "#stdout" ) )
-	{
-		fp = stdout ;
-	}
-	else if( STRCMP( pathfilename , == , "#stderr" ) )
-	{
-		fp = stderr ;
-	}
-	else
-	{
-		fp = fopen( pathfilename , "a" ) ;
-		if( fp == NULL )
-		{
-			return -1;
-		}
-	}
 	
 	/* 写日志 */
 	fprintf( fp , "%s             0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F    0123456789ABCDEF\n" , indentation );
@@ -167,16 +145,6 @@ int DumpBuffer( char *indentation , char *pathfilename , int buf_len , void *buf
 		if( ! ( lines_offset*16 < buf_len ) )
 			break;
 	}
-	
-	/* 关闭文件 */
-	if( STRCMP( pathfilename , == , "#stdin" ) )
-		;
-	else if( STRCMP( pathfilename , == , "#stdout" ) )
-		;
-	else if( STRCMP( pathfilename , == , "#stderr" ) )
-		;
-	else
-		fclose( fp );
 	
 	return 0;
 }

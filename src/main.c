@@ -16,8 +16,10 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_6_0[] = "0.6.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_6_0 ;
+char    __TCPLSTAT_VERSION_0_7_0[] = "0.7.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_7_0 ;
+
+struct TcplStatEnv	*g_p_env = NULL ;
 
 /* 显示版本 */
 static void version()
@@ -43,7 +45,68 @@ static void usage()
 	return;
 }
 
-/* 入口 */
+/* 信号灯回调函数 */
+static void SignalProc( int sig_no )
+{
+	struct TcplStatEnv	*p_env = g_p_env ;
+	
+	if( sig_no == SIGTERM || sig_no == SIGINT )
+	{
+		struct TcplSession	*p_tcpl_session = NULL ;
+		struct TcplSession	*p_next_tcpl_session = NULL ;
+		struct TcplPacket	*p_tcpl_packet = NULL ;
+		struct TcplPacket	*p_next_tcpl_packet = NULL ;
+		
+		/* 销毁TCP会话树 */
+		DestroyTcplSessionTree( p_env );
+		
+		/* 销毁托管TCP会话链表 */
+		list_for_each_entry_safe( p_tcpl_session , p_next_tcpl_session , & (p_env->unused_tcpl_session.this_node) , struct TcplSession , this_node )
+		{
+			list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node )
+			{
+				list_del( & (p_tcpl_packet->this_node) );
+				if( p_tcpl_packet->packet_data_intercepted )
+					free( p_tcpl_packet->packet_data_intercepted );
+				free( p_tcpl_packet );
+			}
+			
+			free( p_tcpl_session );
+		}
+		
+		/* 销毁托管TCP分组链表 */
+		list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_env->unused_tcpl_packet.this_node) , struct TcplPacket , this_node )
+		{
+			list_del( & (p_tcpl_packet->this_node) );
+			if( p_tcpl_packet->packet_data_intercepted )
+				free( p_tcpl_packet->packet_data_intercepted );
+			free( p_tcpl_packet );
+		}
+		
+		exit(0);
+	}
+	else if( sig_no == SIGUSR1 )
+	{
+		if( p_env->cmd_line_para.log_pathfilename )
+		{
+			/* 关闭日志文件 */
+			fclose( p_env->fp );
+			
+			/* 打开日志文件 */
+			p_env->fp = fopen( p_env->cmd_line_para.log_pathfilename , "a" ) ;
+			if( p_env->fp == NULL )
+			{
+				exit(1);
+			}
+			
+			setbuf( p_env->fp , NULL );
+		}
+	}
+	
+	return;
+}
+
+/* 主入口 */
 int main( int argc , char *argv[] )
 {
 	struct TcplStatEnv	*p_env = NULL ;
@@ -52,6 +115,8 @@ int main( int argc , char *argv[] )
 	bpf_u_int32		net ;
 	bpf_u_int32		net_mask ;
 	struct bpf_program	pcap_filter ;
+	
+	struct sigaction	act ;
 	
 	int			nret = 0 ;
 	
@@ -72,6 +137,10 @@ int main( int argc , char *argv[] )
 		return 1;
 	}
 	memset( p_env , 0x00 , sizeof(struct TcplStatEnv) );
+	g_p_env = p_env ;
+	
+	INIT_LIST_HEAD( & (p_env->unused_tcpl_session.this_node) );
+	INIT_LIST_HEAD( & (p_env->unused_tcpl_packet.this_node) );
 	
 	/* 解析命令行参数 */
 	for( i = 1 ; i < argc ; i++ )
@@ -254,7 +323,18 @@ int main( int argc , char *argv[] )
 		p_env->fp = stdout ;
 	}
 	
-	/* 进入嗅探主循环，捕获TCP包后调用回调函数 */
+	/* 设置信号灯 */
+	signal( SIGHUP , SIG_IGN );
+	signal( SIGPIPE , SIG_IGN );
+	
+	act.sa_handler = & SignalProc ;
+	sigemptyset( & (act.sa_mask) );
+	act.sa_flags = SA_RESTART ;
+	sigaction( SIGTERM , & act , NULL );
+	sigaction( SIGINT , & act , NULL );
+	sigaction( SIGUSR1 , & act , NULL );
+	
+	/* 进入嗅探主循环，捕获TCP分组后调用回调函数 */
 	pcap_loop( p_env->pcap , -1 , PcapCallback , (u_char *)p_env );
 	
 	/* 关闭日志文件 */

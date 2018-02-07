@@ -24,9 +24,28 @@ int CompareTcplSessionTreeNodeEntry( void *pv1 , void *pv2 )
 		return 0;
 }
 
-LINK_RBTREENODE( LinkTcplSessionTreeNode , struct TcplStatEnv , tcplsessions_rbtree , struct TcplSession , tcplsession_rbnode , CompareTcplSessionTreeNodeEntry )
-QUERY_RBTREENODE( QueryTcplSessionTreeNode , struct TcplStatEnv , tcplsessions_rbtree , struct TcplSession , tcplsession_rbnode , CompareTcplSessionTreeNodeEntry )
-UNLINK_RBTREENODE( UnlinkTcplSessionTreeNode , struct TcplStatEnv , tcplsessions_rbtree , struct TcplSession , tcplsession_rbnode )
-TRAVEL_RBTREENODE( TravelTcplSessionTreeNode , struct TcplStatEnv , tcplsessions_rbtree , struct TcplSession , tcplsession_rbnode )
-DESTROY_RBTREE( DestroyTcplSessionTree , struct TcplStatEnv , tcplsessions_rbtree , struct TcplSession , tcplsession_rbnode , FREE_RBTREENODEENTRY_DIRECTLY )
+funcFreeRbTreeNodeEntry FreeTcplSessionTreeNodeEntry ;
+void FreeTcplSessionTreeNodeEntry( void *pv )
+{
+	struct TcplSession	*p_tcpl_session = (struct TcplSession *)pv ;
+	
+	struct TcplPacket	*p_tcpl_packet = NULL ;
+	struct TcplPacket	*p_next_tcpl_packet = NULL ;
+	
+	list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node )
+	{
+		list_del( & (p_tcpl_packet->this_node) );
+		if( p_tcpl_packet->packet_data_intercepted )
+			free( p_tcpl_packet->packet_data_intercepted );
+		free( p_tcpl_packet );
+	}
+	
+	return;
+}
+
+LINK_RBTREENODE( LinkTcplSessionTreeNode , struct TcplStatEnv , tcpl_sessions_rbtree , struct TcplSession , tcplsession_rbnode , CompareTcplSessionTreeNodeEntry )
+QUERY_RBTREENODE( QueryTcplSessionTreeNode , struct TcplStatEnv , tcpl_sessions_rbtree , struct TcplSession , tcplsession_rbnode , CompareTcplSessionTreeNodeEntry )
+UNLINK_RBTREENODE( UnlinkTcplSessionTreeNode , struct TcplStatEnv , tcpl_sessions_rbtree , struct TcplSession , tcplsession_rbnode )
+TRAVEL_RBTREENODE( TravelTcplSessionTreeNode , struct TcplStatEnv , tcpl_sessions_rbtree , struct TcplSession , tcplsession_rbnode )
+DESTROY_RBTREE( DestroyTcplSessionTree , struct TcplStatEnv , tcpl_sessions_rbtree , struct TcplSession , tcplsession_rbnode , FreeTcplSessionTreeNodeEntry )
 
