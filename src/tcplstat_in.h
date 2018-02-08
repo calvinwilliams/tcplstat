@@ -175,6 +175,8 @@ struct TcplPacket
 	uint32_t		packet_data_len_intercepted ;
 	uint32_t		packet_data_len_actually ;
 	
+	unsigned char		is_lock ;
+	
 	struct list_head	this_node ;
 } ;
 
@@ -279,6 +281,9 @@ struct TcplSession
 	char				*sql ;
 	int				sql_len ;
 	
+	char				*http_first_line ;
+	int				http_first_line_len ;
+	
 	struct list_head		this_node ;
 	struct rb_node			tcplsession_rbnode ;
 } ;
@@ -295,6 +300,7 @@ struct CommandLineParameters
 	unsigned char		output_session_packet ;
 	unsigned char		output_session_packet_data ;
 	unsigned char		output_sql ;
+	unsigned char		output_http ;
 	char			*log_pathfilename ;
 } ;
 

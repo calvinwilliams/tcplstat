@@ -46,7 +46,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				{
 					free( p_tcpl_session );
 				}
-				return -1;
+				return 0;
 			}
 		}
 		else

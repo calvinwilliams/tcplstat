@@ -16,8 +16,8 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_7_0[] = "0.7.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_7_0 ;
+char    __TCPLSTAT_VERSION_0_8_0[] = "0.8.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_8_0 ;
 
 struct TcplStatEnv	*g_p_env = NULL ;
 
@@ -34,7 +34,7 @@ static void usage()
 {
 	printf( "USAGE : tcplstat -v\n" );
 	printf( "                 -l\n" );
-	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ --max-packet-trace-count ] [ -o [ESPDd] ] [ --sql ] [ --log-file (pathfilename) ]\n" );
+	printf( "                 [ -i (network_interface) ] [ -f (filter_string) ] [ --max-packet-trace-count ] [ -o [ESPDd] ] [ --sql ] [ --http ] [ --log-file (pathfilename) ]\n" );
 	printf( "-o E : Output EVENT\n" );
 	printf( "   S : Output SESSION\n" );
 	printf( "   P : Output PACKET\n" );
@@ -209,6 +209,10 @@ int main( int argc , char *argv[] )
 		else if( STRCMP( argv[i] , == , "--sql" ) )
 		{
 			p_env->cmd_line_para.output_sql = 1 ;
+		}
+		else if( STRCMP( argv[i] , == , "--http" ) )
+		{
+			p_env->cmd_line_para.output_http = 1 ;
 		}
 		else if( STRCMP( argv[i] , == , "--log-file" ) && i + 1 < argc )
 		{

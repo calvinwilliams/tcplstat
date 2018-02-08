@@ -88,7 +88,7 @@ copyright by calvin<calvinwilliams@163.com> 2018
 $ tcplstat
 USAGE : tcplstat -v
                  -l
-                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ] [ --max-packet-trace-count ] [ --log-file (pathfilename) ]
+                 [ -i (network_interface) ] [ -f (filter_string) ] [ -o [ESPDd] ] [ --sql ] [ --http ] [ --max-packet-trace-count ] [ --log-file (pathfilename) ]
 -o E : Output EVENT
    S : Output SESSION
    P : Output PACKET
@@ -102,6 +102,7 @@ NOTICE : See pcap-filter(7) for the syntax of filter
 * `-f`设置网络过滤规则，比如`tcp port 445`嗅探所有连接到端口445的往来TCP分组，具体参见`pcap-filter(7)`
 * `-o`一旦捕获到TCP分组，输出数据类型，E表示输出分组事件，S表示连接断开输出会话统计信息，P表示连接断开输出TCP分组统计信息，D表示连接断开输出TCP分组数据信息，d表示输出调试信息
 * `--sql`捕获SQL统计耗时信息
+* `--http`捕获HTTP统计耗时信息
 * `--max-packet-trace-count`针对长连接不释放，总是不能侦测到连接断开也就不能输出会话总结信息，该选项设置TCP分组累积到多少时强制输出并清空TCP分组明细信息，默认为1000，下次输出会话统计信息时前缀从'E |'变成'E -'
 * `--log-file`输出到日志文件，不设置文件则输出到屏幕
 

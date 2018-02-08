@@ -68,6 +68,9 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 		
 		if( p_env->cmd_line_para.output_session_packet )
 		{
+			if( p_tcpl_packet->is_lock == 1 )
+				continue;
+			
 			if( p_tcpl_packet->direction_flag == 1 )
 				direct_string = "->" ;
 			else
@@ -107,10 +110,10 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 				free( p_tcpl_packet->packet_data_intercepted );
 			free( p_tcpl_packet );
 		}
+		
+		p_tcpl_session->total_packet_trace_count--;
+		p_tcpl_session->total_packet_trace_data_len -= p_tcpl_packet->packet_data_len_actually ;
 	}
-	
-	p_tcpl_session->total_packet_trace_count = 0 ;
-	p_tcpl_session->total_packet_trace_data_len = 0 ;
 	
 	p_tcpl_session->continue_trace_flag = 1 ;
 	
