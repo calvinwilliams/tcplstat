@@ -23,7 +23,7 @@ tcplstatÊÇ»ùÓÚlibpcapÍøÂçÐáÌ½³ÌÐò°üµÄÍøÂç¼à¿Ø¹¤¾ß£¬ËüÄÜ**ÅÔÂ·**²¶»ñËùÓÐ¾­¹ýÍøÂçÉ
 
 tcplstatÔÚ**ÅÔÂ·**¹¤×÷£¬ËùÒÔ²»»á¶ÔÓ¦ÓÃÔì³ÉÈÎºÎÓ°Ïì£¬Ò²ÎÞÐèÇÖÈëÓ¦ÓÃ£¬¼´¿É»ñµÃÍøÂçÊý¾ÝÍùÀ´·Ö×éÃ÷Ï¸ºÍÍ³¼ÆÐÅÏ¢¡£
 
-tcplstatÔÚÊµÏÖ»ù´¡ÍøÂç¼à¿Ø¹¦ÄÜÊ±»¹ÊµÏÖÁË²É¼¯·ÖÎöSQLºÄÊ±ÐÅÏ¢£¬Í¬ÑùÒ²ÊÇ**ÅÔÂ·**²¶»ñ£¬²»Ó°ÏìÓ¦ÓÃÒ²ÎÞÐè¸ÄÔìÓ¦ÓÃ£¬°ïÖúÓ¦ÓÃÓÅ»¯ÐÔÄÜ¡£
+tcplstatÔÚÊµÏÖ»ù´¡ÍøÂç¼à¿Ø¹¦ÄÜÊ±»¹ÊµÏÖÁË²É¼¯·ÖÎöSQLºÄÊ±ºÍHTTPºÄÊ±ÐÅÏ¢£¬Í¬ÑùÒ²ÊÇ**ÅÔÂ·**²¶»ñ£¬²»Ó°ÏìÓ¦ÓÃÒ²ÎÞÐè¸ÄÔìÓ¦ÓÃ£¬°ïÖúÓ¦ÓÃÓÅ»¯ÐÔÄÜ¡£
 
 tcplstatÊÇ¿ªÔ´µÄ£¬³ýÁËÒýÓÃÁËLinuxÄÚºËµÄºìºÚÊ÷ºÍÁ´±íÔ´ÂëÍâ£¬×ÔÉíÔ´ÂëÖ»ÓÐ1500ÐÐ×óÓÒ£¬Ô´Âë½á¹¹¼òµ¥Ò×¶Á¡£
 
