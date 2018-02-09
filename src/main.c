@@ -16,8 +16,8 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_8_0[] = "0.8.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_8_0 ;
+char    __TCPLSTAT_VERSION_0_8_1[] = "0.8.1" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_8_1 ;
 
 struct TcplStatEnv	*g_p_env = NULL ;
 
@@ -98,8 +98,6 @@ static void SignalProc( int sig_no )
 			{
 				exit(1);
 			}
-			
-			setbuf( p_env->fp , NULL );
 		}
 	}
 	
@@ -125,9 +123,6 @@ int main( int argc , char *argv[] )
 		usage();
 		exit(0);
 	}
-	
-	/* 禁用标准输出缓存 */
-	setbuf( stdout , NULL );
 	
 	/* 分配内存以存放环境结构 */
 	p_env = (struct TcplStatEnv *)malloc( sizeof(struct TcplStatEnv) ) ;
@@ -319,8 +314,6 @@ int main( int argc , char *argv[] )
 			free( p_env );
 			return 1;
 		}
-		
-		setbuf( p_env->fp , NULL );
 	}
 	else
 	{
