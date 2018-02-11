@@ -16,14 +16,25 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
-#include <net/ethernet.h>
 #include <arpa/inet.h>
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
 
-#include "pcap/pcap.h"
+#if ( defined __linux__ )
+#include <net/ethernet.h>
+#elif ( defined _AIX )
+#include <netinet/if_ether.h>
+#endif
+
+#include "pcap.h"
+#if ( defined __linux__ )
 #include "pcap/sll.h"
+#elif ( defined _AIX )
+#undef _AIX
+#include "net/bpf.h"
+#define _AIX
+#endif
 
 #include "list.h"
 #include "rbtree.h"
@@ -49,8 +60,60 @@
 #define MEMCMP(_a_,_C_,_b_,_n_) ( memcmp(_a_,_b_,_n_) _C_ 0 )
 #endif
 
-/* 以太网分组头大小 */
-#define SIZE_ETHERNET		14
+/* 以太网分组头 */
+struct NetinetEthernetHeader
+{
+	unsigned char	_ether_dhost[ 6 ] ;
+	unsigned char	_ether_shost[ 6 ] ;
+	unsigned short	_ether_type ;
+} ;
+
+/* IP分组头 */
+struct NetinetIpHeader
+{
+	unsigned char	_ip_vhl ;
+	unsigned char	_ip_tos ;
+	unsigned short	_ip_len ;
+	unsigned short	_ip_id ;
+	unsigned short	_ip_off ;
+#define IP_RF		0x8000
+#define IP_DF		0x4000
+#define IP_MF		0x2000
+#define IP_OFFMASK	0x1fff
+	unsigned char	_ip_ttl ;
+	unsigned char	_ip_p ;
+	unsigned short	_ip_sum ;
+	struct in_addr	_ip_src ;
+	struct in_addr	_ip_dst ;
+} ;
+
+#define IP_HL(ip)	(((ip)->_ip_vhl) & 0x0f)
+#define IP_V(ip)	(((ip)->_ip_vhl) >> 4)
+
+/* TCP分组头 */
+struct NetinetTcpHeader
+{
+	unsigned short	_th_sport ;
+	unsigned short	_th_dport ;
+	unsigned int	_th_seq ;
+	unsigned int	_th_ack ;
+	unsigned char	_th_offx2 ;
+#define TH_OFF(th)	(((th)->_th_offx2 & 0xf0) >> 4)
+	unsigned char	_th_flags ;
+#define TH_FIN		0x01
+#define TH_SYN		0x02
+#define TH_RST		0x04
+#define TH_PSH		0x08
+#define TH_ACK		0x10
+#define TH_URG		0x20
+#define TH_ECE		0x40
+#define TH_CWR		0x80
+#define TH_FLAGS	(TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
+#define TH_FLAG(tcp,flag)	((((tcp)->_th_flags)&flag)?1:0)
+	unsigned short	_th_win ;
+	unsigned short	_th_sum ;
+	unsigned short	_th_urp ;
+} ;
 
 /* 网络地址信息 */
 #define SET_TCPL_SESSION_ID(_tcpl_session_id_,_client_ip_,_client_port_,_server_ip_,_server_port_) \
@@ -161,6 +224,18 @@ struct TcplAddrHumanReadable
 		} \
 	} \
 
+#define DELETE_TCPL_PACKET(_p_env_,_p_tcpl_packet_) \
+	{ \
+		if( (_p_env_)->cmd_line_para.output_debug ) \
+		{ \
+			fprintf( p_env->fp , "d | DELETE TCPL PACKET[%p]\n" , (_p_tcpl_packet_) ); \
+		} \
+		list_del( & ((_p_tcpl_packet_)->this_node) ); \
+		if( (_p_tcpl_packet_)->packet_data_intercepted ) \
+			free( (_p_tcpl_packet_)->packet_data_intercepted ); \
+		free( (_p_tcpl_packet_) ); \
+	} \
+
 struct TcplPacket
 {
 	struct timeval		timestamp ;
@@ -190,7 +265,7 @@ struct TcplSessionId
 } ;
 
 /* TCP会话 */
-#define TCPLSESSION_MAX_PACKET_TRACE_COUNT	100
+#define TCPLSESSION_MAX_PACKET_TRACE_COUNT	2
 
 #define TCPLSESSION_STATE_DISCONNECTED		0
 #define TCPLSESSION_STATE_CONNECTING		1
@@ -237,6 +312,15 @@ struct TcplSessionId
 		{ \
 			fprintf( p_env->fp , "d | REUSE TCPL SESSION[%p]\n" , (_p_tcpl_session_) ); \
 		} \
+	} \
+
+#define DELETE_TCPL_SESSION(_p_env_,_p_tcpl_session_) \
+	{ \
+		if( (_p_env_)->cmd_line_para.output_debug ) \
+		{ \
+			fprintf( p_env->fp , "d | DELETE TCPL SESSION[%p]\n" , (_p_tcpl_session_) ); \
+		} \
+		free( (_p_tcpl_session_) ); \
 	} \
 
 struct TcplSession
@@ -343,13 +427,13 @@ char *ConvDateTimeHumanReadable( time_t tt );
 int DumpBuffer( FILE *fp , char *indentation , char *pathfilename , int buf_len , void *buf );
 
 /* PCAP回调函数 */
-void PcapCallback( u_char *args , const struct pcap_pkthdr *header , const u_char *packet );
+void PcapCallback( unsigned char *args , const struct pcap_pkthdr *header , const unsigned char *packet );
 
 /* 处理TCP分组 */
-int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct NetinetEthernetHeader *etherhdr , struct NetinetIpHeader *iphdr , struct NetinetTcpHeader *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
 
 /* 增加TCP分组 */
-int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
 
 /* 输出TCP会话和包明细 */
 void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );

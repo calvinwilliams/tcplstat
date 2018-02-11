@@ -33,7 +33,7 @@ struct list_head {
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name) \
+#define _LIST_HEAD(name) \
 	struct list_head name = LIST_HEAD_INIT(name)
 
 void INIT_LIST_HEAD(struct list_head *list);

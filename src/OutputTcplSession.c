@@ -105,10 +105,7 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 		}
 		else
 		{
-			list_del( & (p_tcpl_packet->this_node) );
-			if( p_tcpl_packet->packet_data_intercepted )
-				free( p_tcpl_packet->packet_data_intercepted );
-			free( p_tcpl_packet );
+			DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
 		}
 		
 		p_tcpl_session->total_packet_trace_count--;

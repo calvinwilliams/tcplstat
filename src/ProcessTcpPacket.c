@@ -11,7 +11,7 @@
 char	*_g_tcplstat_tcplsession_state[] = { "DISCONNECTED" , "CONNECTING" , "CONNECTED" , "DISCONNECTING" } ;
 
 /* 处理TCP分组 */
-int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct ether_header *etherhdr , struct ip *iphdr , struct tcphdr *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
+int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct NetinetEthernetHeader *etherhdr , struct NetinetIpHeader *iphdr , struct NetinetTcpHeader *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
 {
 	struct TcplSession	tcpl_session ;
 	struct TcplSession	*p_tcpl_session = NULL ;
@@ -20,10 +20,10 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	int			nret = 0 ;
 	
 	/* 如果TCP分组带有SYN标志 */
-	if( tcphdr->syn == 1 )
+	if( TH_FLAG(tcphdr,TH_SYN) )
 	{
 		/* 查询正向会话ID */
-		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_src , tcphdr->_th_sport , iphdr->_ip_dst , tcphdr->_th_dport )
 		p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 		if( p_tcpl_session )
 		{
@@ -44,7 +44,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 				else
 				{
-					free( p_tcpl_session );
+					DELETE_TCPL_SESSION( p_env , p_tcpl_session );
 				}
 				return 0;
 			}
@@ -52,7 +52,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		else
 		{
 			/* 查询反向会话ID */
-			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_dst , tcphdr->dest , iphdr->ip_src , tcphdr->source )
+			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_dst , tcphdr->_th_dport , iphdr->_ip_src , tcphdr->_th_sport )
 			p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 			if( p_tcpl_session )
 			{
@@ -98,7 +98,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					REUSE_TCPL_SESSION( p_env , p_tcpl_session )
 				}
 				
-				SET_TCPL_SESSION_ID( p_tcpl_session->tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+				SET_TCPL_SESSION_ID( p_tcpl_session->tcpl_session_id , iphdr->_ip_src , tcphdr->_th_sport , iphdr->_ip_dst , tcphdr->_th_dport )
 				memcpy( & (p_tcpl_session->tcpl_addr_hr) , p_tcpl_addr_hr , sizeof(struct TcplAddrHumanReadable) );
 				COPY_TIMEVAL( p_tcpl_session->begin_timestamp , p_env->fixed_timestamp )
 				p_tcpl_session->state = TCPLSESSION_STATE_CONNECTING ;
@@ -124,10 +124,10 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	}
 	
 	/* 如果TCP分组带有FIN标志 */
-	if( tcphdr->fin == 1 )
+	if( TH_FLAG(tcphdr,TH_FIN) )
 	{
 		/* 查询正向会话ID */
-		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_src , tcphdr->_th_sport , iphdr->_ip_dst , tcphdr->_th_dport )
 		p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 		if( p_tcpl_session )
 		{
@@ -172,7 +172,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		else
 		{
 			/* 查询反向会话ID */
-			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_dst , tcphdr->dest , iphdr->ip_src , tcphdr->source )
+			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_dst , tcphdr->_th_dport , iphdr->_ip_src , tcphdr->_th_sport )
 			p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 			if( p_tcpl_session )
 			{
@@ -217,10 +217,10 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	}
 	
 	/* 如果TCP分组带有RST标志 */
-	if( tcphdr->rst == 1 )
+	if( TH_FLAG(tcphdr,TH_RST) )
 	{
 		/* 查询正向会话ID */
-		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_src , tcphdr->_th_sport , iphdr->_ip_dst , tcphdr->_th_dport )
 		p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 		if( p_tcpl_session )
 		{
@@ -250,7 +250,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			}
 			else
 			{
-				free( p_tcpl_session );
+				DELETE_TCPL_SESSION( p_env , p_tcpl_session );
 			}
 			
 			return 0;
@@ -258,7 +258,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		else
 		{
 			/* 查询反向会话ID */
-			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_dst , tcphdr->dest , iphdr->ip_src , tcphdr->source )
+			SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_dst , tcphdr->_th_dport , iphdr->_ip_src , tcphdr->_th_sport )
 			p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 			if( p_tcpl_session )
 			{
@@ -288,7 +288,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 				else
 				{
-					free( p_tcpl_session );
+					DELETE_TCPL_SESSION( p_env , p_tcpl_session );
 				}
 				
 				return 0;
@@ -298,7 +298,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	
 	/* 如果TCP分组带有ACK标志或其它标志 */
 	/* 查询正向会话ID */
-	SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+	SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_src , tcphdr->_th_sport , iphdr->_ip_dst , tcphdr->_th_dport )
 	p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 	if( p_tcpl_session )
 	{
@@ -306,7 +306,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		{
 			/* 收到三步握手的最后一个ACK 或者 正常TCP分组往来 */
 			
-			if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_CONNECTING )
+			if( TH_FLAG(tcphdr,TH_ACK) && p_tcpl_session->state == TCPLSESSION_STATE_CONNECTING )
 			{
 				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				COPY_TIMEVAL( p_tcpl_session->wait_for_after_syn_and_second_ack_elapse , p_env->fixed_timestamp );
@@ -318,7 +318,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			if( nret )
 				return nret;
 			
-			if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_CONNECTING )
+			if( TH_FLAG(tcphdr,TH_ACK) && p_tcpl_session->state == TCPLSESSION_STATE_CONNECTING )
 			{
 				p_tcpl_session->state = TCPLSESSION_STATE_CONNECTED ;
 			}
@@ -337,7 +337,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 		else if( p_tcpl_session->status[0] == TCPLSESSION_STATUS_FIN && p_tcpl_session->status[1] == TCPLSESSION_STATUS_FIN )
 		{
 			/* 收到四步分手的最后一个ACK */
-			if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_DISCONNECTING && p_tcpl_session->disconnect_direction == TCPLSESSION_DISCONNECT_DIRECTION )
+			if( TH_FLAG(tcphdr,TH_ACK) && p_tcpl_session->state == TCPLSESSION_STATE_DISCONNECTING && p_tcpl_session->disconnect_direction == TCPLSESSION_DISCONNECT_DIRECTION )
 			{
 				p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 				COPY_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_env->fixed_timestamp );
@@ -364,7 +364,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 				else
 				{
-					free( p_tcpl_session );
+					DELETE_TCPL_SESSION( p_env , p_tcpl_session );
 				}
 				
 				return 0;
@@ -374,7 +374,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 	else
 	{
 		/* 查询反向会话ID */
-		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->ip_dst , tcphdr->dest , iphdr->ip_src , tcphdr->source )
+		SET_TCPL_SESSION_ID( tcpl_session.tcpl_session_id , iphdr->_ip_dst , tcphdr->_th_dport , iphdr->_ip_src , tcphdr->_th_sport )
 		p_tcpl_session = QueryTcplSessionTreeNode( p_env , & tcpl_session ) ;
 		if( p_tcpl_session )
 		{
@@ -399,7 +399,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			else if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_FIN && p_tcpl_session->status[0] == TCPLSESSION_STATUS_FIN )
 			{
 				/* 收到四步分手的最后一个ACK */
-				if( tcphdr->ack && p_tcpl_session->state == TCPLSESSION_STATE_DISCONNECTING && p_tcpl_session->disconnect_direction == TCPLSESSION_DISCONNECT_OPPO_DIRECTION )
+				if( TH_FLAG(tcphdr,TH_ACK) && p_tcpl_session->state == TCPLSESSION_STATE_DISCONNECTING && p_tcpl_session->disconnect_direction == TCPLSESSION_DISCONNECT_OPPO_DIRECTION )
 				{
 					p_last_tcpl_packet = list_last_entry( & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node ) ;
 					COPY_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_env->fixed_timestamp );
@@ -426,7 +426,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					}
 					else
 					{
-						free( p_tcpl_session );
+						DELETE_TCPL_SESSION( p_env , p_tcpl_session );
 					}
 					
 					return 0;
@@ -445,7 +445,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			}
 			memset( p_tcpl_session , 0x00 , sizeof(struct TcplSession) );
 			
-			SET_TCPL_SESSION_ID( p_tcpl_session->tcpl_session_id , iphdr->ip_src , tcphdr->source , iphdr->ip_dst , tcphdr->dest )
+			SET_TCPL_SESSION_ID( p_tcpl_session->tcpl_session_id , iphdr->_ip_src , tcphdr->_th_sport , iphdr->_ip_dst , tcphdr->_th_dport )
 			memcpy( & (p_tcpl_session->tcpl_addr_hr) , p_tcpl_addr_hr , sizeof(struct TcplAddrHumanReadable) );
 			COPY_TIMEVAL( p_tcpl_session->begin_timestamp , p_env->fixed_timestamp )
 			p_tcpl_session->state = TCPLSESSION_STATE_CONNECTED ;

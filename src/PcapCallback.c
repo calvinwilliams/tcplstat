@@ -13,11 +13,13 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 {
 	struct TcplStatEnv		*p_env = (struct TcplStatEnv *)args ;
 	int				linklayer_header_type ;
+#if ( defined __linux__ )
 	struct sll_header		*sll = NULL ;
-	struct ether_header		*etherhdr = NULL ;
-	struct ip			*iphdr = NULL ;
+#endif
+	struct NetinetEthernetHeader	*etherhdr = NULL ;
+	struct NetinetIpHeader		*iphdr = NULL ;
 	int				iphdr_size ;
-	struct tcphdr			*tcphdr = NULL ;
+	struct NetinetTcpHeader		*tcphdr = NULL ;
 	int				tcphdr_size ;
 	unsigned short			ether_type ;
 	char				*packet_data_intercepted = NULL ;
@@ -40,33 +42,37 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	linklayer_header_type = pcap_datalink(p_env->pcap) ;
 	switch( linklayer_header_type )
 	{
+#if ( defined __linux__ )
 		case DLT_LINUX_SLL :
 			sll = (struct sll_header *)packet ;
 			ether_type = ntohs( sll->sll_protocol ) ;
-			iphdr = (struct ip *)( (char*)sll + sizeof(struct sll_header) ) ;
+			iphdr = (struct NetinetIpHeader *)( (char*)sll + sizeof(struct sll_header) ) ;
 			break;
+#endif
 		case DLT_EN10MB :
-			etherhdr = (struct ether_header *)packet ;
-			ether_type = ntohs( etherhdr->ether_type ) ;
-			iphdr = (struct ip *)( (char*)etherhdr + sizeof(struct ether_header) ) ;
+			etherhdr = (struct NetinetEthernetHeader *)packet ;
+			ether_type = ntohs( etherhdr->_ether_type ) ;
+			iphdr = (struct NetinetIpHeader *)( (char*)etherhdr + sizeof(struct NetinetEthernetHeader) ) ;
 			break;
+#if ( defined __linux__ )
 		case DLT_RAW :
 			ether_type = ETHERTYPE_IP ;
-			iphdr = (struct ip *)( packet ) ;
+			iphdr = (struct NetinetIpHeader *)( packet ) ;
 			break;
+#endif
 		default :
 			return;
 	}
 	
 	if( ether_type != ETHERTYPE_IP )
 		return;
-	if( iphdr->ip_p != IPPROTO_TCP )
+	if( iphdr->_ip_p != IPPROTO_TCP )
 		return;
-	iphdr_size = iphdr->ip_hl*4 ;
-	tcphdr = (struct tcphdr *)( (char*)iphdr + iphdr_size ) ;
-	tcphdr_size = tcphdr->doff*4 ;
+	iphdr_size = IP_HL(iphdr)*4 ;
+	tcphdr = (struct NetinetTcpHeader *)( (char*)iphdr + iphdr_size ) ;
+	tcphdr_size = TH_OFF(tcphdr)*4 ;
 	
-	packet_data_len_intercepted = htons(iphdr->ip_len) - iphdr_size - tcphdr_size ;
+	packet_data_len_intercepted = htons(iphdr->_ip_len) - iphdr_size - tcphdr_size ;
 	if( packet_data_len_intercepted > 0 )
 		packet_data_intercepted = (char*)( (char*)tcphdr + tcphdr_size ) ;
 	else
@@ -76,13 +82,13 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	memset( & tcpl_addr_hr , 0x00 , sizeof(struct TcplAddrHumanReadable) );
 	if( etherhdr )
 	{
-		sprintf( tcpl_addr_hr.src_mac , "%02X:%02X:%02X:%02X:%02X:%02X" , etherhdr->ether_shost[0] , etherhdr->ether_shost[1] , etherhdr->ether_shost[2] , etherhdr->ether_shost[3] , etherhdr->ether_shost[4] , etherhdr->ether_shost[5] );
-		sprintf( tcpl_addr_hr.dst_mac , "%02X:%02X:%02X:%02X:%02X:%02X" , etherhdr->ether_dhost[0] , etherhdr->ether_dhost[1] , etherhdr->ether_dhost[2] , etherhdr->ether_dhost[3] , etherhdr->ether_dhost[4] , etherhdr->ether_dhost[5] );
+		sprintf( tcpl_addr_hr.src_mac , "%02X:%02X:%02X:%02X:%02X:%02X" , etherhdr->_ether_shost[0] , etherhdr->_ether_shost[1] , etherhdr->_ether_shost[2] , etherhdr->_ether_shost[3] , etherhdr->_ether_shost[4] , etherhdr->_ether_shost[5] );
+		sprintf( tcpl_addr_hr.dst_mac , "%02X:%02X:%02X:%02X:%02X:%02X" , etherhdr->_ether_dhost[0] , etherhdr->_ether_dhost[1] , etherhdr->_ether_dhost[2] , etherhdr->_ether_dhost[3] , etherhdr->_ether_dhost[4] , etherhdr->_ether_dhost[5] );
 	}
-	strcpy( tcpl_addr_hr.src_ip , inet_ntoa(iphdr->ip_src) );
-	strcpy( tcpl_addr_hr.dst_ip , inet_ntoa(iphdr->ip_dst) );
-	tcpl_addr_hr.src_port = ntohs(tcphdr->source) ;
-	tcpl_addr_hr.dst_port = ntohs(tcphdr->dest) ;
+	strcpy( tcpl_addr_hr.src_ip , inet_ntoa(iphdr->_ip_src) );
+	strcpy( tcpl_addr_hr.dst_ip , inet_ntoa(iphdr->_ip_dst) );
+	tcpl_addr_hr.src_port = ntohs(tcphdr->_th_sport) ;
+	tcpl_addr_hr.dst_port = ntohs(tcphdr->_th_dport) ;
 	
 	/* 输出事件日志 */
 	if( p_env->cmd_line_para.output_event )
@@ -92,7 +98,9 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 			, linklayer_header_type
 			, tcpl_addr_hr.src_mac , tcpl_addr_hr.dst_mac
 			, tcpl_addr_hr.src_ip , tcpl_addr_hr.dst_ip
-			, tcpl_addr_hr.src_port , tcpl_addr_hr.dst_port , tcphdr->seq , tcphdr->ack_seq , tcphdr->syn , tcphdr->ack , tcphdr->fin , tcphdr->psh , tcphdr->rst , tcphdr->urg
+			, tcpl_addr_hr.src_port , tcpl_addr_hr.dst_port
+			, tcphdr->_th_seq , tcphdr->_th_ack
+			, TH_FLAG(tcphdr,TH_SYN) , TH_FLAG(tcphdr,TH_ACK) , TH_FLAG(tcphdr,TH_FIN) , TH_FLAG(tcphdr,TH_PSH) , TH_FLAG(tcphdr,TH_RST) , TH_FLAG(tcphdr,TH_RST)
 			, packet_data_len_intercepted );
 		
 		if( packet_data_len_intercepted > 0 )

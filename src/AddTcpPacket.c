@@ -165,7 +165,7 @@ static char *FindHttp( char *packet_data_intercepted , uint32_t packet_data_len_
 }
 
 /* 新增TCP分组到明细链表中 */
-int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct tcphdr *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
+int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_last_tcpl_packet = NULL ;
@@ -209,7 +209,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 	
 	/* 填充TCP分组明细结构 */
 	p_tcpl_packet->direction_flag = direction_flag ;
-	sprintf( p_tcpl_packet->packet_flags , "%c%c%c%c%c%c" , tcphdr->syn?'S':'.' , tcphdr->fin?'F':'.' , tcphdr->psh?'P':'.' , tcphdr->ack?'A':'.' , tcphdr->rst?'R':'.' , tcphdr->urg?'U':'.' );
+	sprintf( p_tcpl_packet->packet_flags , "%c%c%c%c%c%c" , TH_FLAG(tcphdr,TH_SYN)?'S':'.' , TH_FLAG(tcphdr,TH_FIN)?'F':'.' , TH_FLAG(tcphdr,TH_PSH)?'P':'.' , TH_FLAG(tcphdr,TH_ACK)?'A':'.' , TH_FLAG(tcphdr,TH_RST)?'R':'.' , TH_FLAG(tcphdr,TH_URG)?'U':'.' );
 	
 	p_tcpl_packet->packet_data_len_intercepted = packet_data_len_intercepted ;
 	p_tcpl_packet->packet_data_len_actually = packet_data_len_actually ;

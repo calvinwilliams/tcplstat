@@ -65,22 +65,16 @@ static void SignalProc( int sig_no )
 		{
 			list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node )
 			{
-				list_del( & (p_tcpl_packet->this_node) );
-				if( p_tcpl_packet->packet_data_intercepted )
-					free( p_tcpl_packet->packet_data_intercepted );
-				free( p_tcpl_packet );
+				DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
 			}
 			
-			free( p_tcpl_session );
+			DELETE_TCPL_SESSION( p_env , p_tcpl_session );
 		}
 		
 		/* 销毁托管TCP分组链表 */
 		list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_env->unused_tcpl_packet.this_node) , struct TcplPacket , this_node )
 		{
-			list_del( & (p_tcpl_packet->this_node) );
-			if( p_tcpl_packet->packet_data_intercepted )
-				free( p_tcpl_packet->packet_data_intercepted );
-			free( p_tcpl_packet );
+			DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
 		}
 		
 		exit(0);
@@ -98,6 +92,7 @@ static void SignalProc( int sig_no )
 			{
 				exit(1);
 			}
+			setbuf( p_env->fp , NULL );
 		}
 	}
 	
@@ -319,6 +314,7 @@ int main( int argc , char *argv[] )
 	{
 		p_env->fp = stdout ;
 	}
+	setbuf( p_env->fp , NULL );
 	
 	/* 设置信号灯 */
 	signal( SIGHUP , SIG_IGN );
