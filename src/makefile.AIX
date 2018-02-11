@@ -91,9 +91,8 @@ install		:	all
 			$(MKDIR) $(BININST) ; \
 		fi ; \
 		for FILE in `echo $(BIN)` ; do \
-			echo $(RM) $(BININST)/$$FILE ; \
-			$(RM) $(BININST)/$$FILE ; \
 			echo $(CP) $$FILE $(BININST)/ ; \
+			$(RM) $(BININST)/$$FILE ; \
 			$(CP) $$FILE $(BININST)/ ; \
 		done \
 	fi
@@ -115,9 +114,8 @@ install		:	all
 			$(MKDIR) $(HDERINST) ; \
 		fi ; \
 		for FILE in `echo $(HDER)` ; do \
-			echo $(RM) $(HDERINST)/$$FILE ; \
-			$(RM) $(HDERINST)/$$FILE ; \
 			echo $(CP) $$FILE $(HDERINST)/ ; \
+			$(RM) $(HDERINST)/$$FILE ; \
 			$(CP) $$FILE $(HDERINST)/ ; \
 		done \
 	fi
@@ -127,9 +125,8 @@ install		:	all
 			$(MKDIR) $(HDERINST2) ; \
 		fi ; \
 		for FILE in `echo $(HDER2)` ; do \
-			echo $(RM) $(HDERINST2)/$$FILE ; \
-			$(RM) $(HDERINST2)/$$FILE ; \
 			echo $(CP) $$FILE $(HDERINST2)/ ; \
+			$(RM) $(HDERINST2)/$$FILE ; \
 			$(CP) $$FILE $(HDERINST2)/ ; \
 		done \
 	fi
@@ -140,9 +137,8 @@ install		:	all
 			$(MKDIR) $(DFTHDERINST) ; \
 		fi ; \
 		for FILE in `echo $(DFTHDER)` ; do \
-			echo $(RM) $(DFTHDERINST)/$$FILE ; \
-			$(RM) $(DFTHDERINST)/$$FILE ; \
 			echo $(CP) $$FILE $(DFTHDERINST)/ ; \
+			$(RM) $(DFTHDERINST)/$$FILE ; \
 			$(CP) $$FILE $(DFTHDERINST)/ ; \
 		done \
 	fi

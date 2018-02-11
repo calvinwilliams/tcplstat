@@ -201,11 +201,14 @@ struct TcplAddrHumanReadable
 
 #define RECYCLING_TCPL_PACKET(_p_env_,_p_tcpl_packet_) \
 	{ \
+		list_del( & ((_p_tcpl_packet_)->this_node) ); \
 		if( (_p_tcpl_packet_)->packet_data_intercepted ) \
 			free( (_p_tcpl_packet_)->packet_data_intercepted ); \
 		memset( (_p_tcpl_packet_) , 0x00 , sizeof(struct TcplPacket) ); \
+		\
 		list_add_tail( & ((_p_tcpl_packet_)->this_node) , & ((_p_env_)->unused_tcpl_packet.this_node) ); \
 		(_p_env_)->unused_tcpl_packet_count++; \
+		\
 		if( (_p_env_)->cmd_line_para.output_debug ) \
 		{ \
 			fprintf( p_env->fp , "d | REUSE TCPL PACKET[%p]\n" , (_p_tcpl_packet_) ); \
@@ -216,8 +219,9 @@ struct TcplAddrHumanReadable
 	{ \
 		(_p_tcpl_packet_) = list_first_entry( & ((_p_env_)->unused_tcpl_packet.this_node) , struct TcplPacket , this_node ) ; \
 		list_del( & ((_p_tcpl_packet_)->this_node) ); \
-		(_p_env_)->unused_tcpl_packet_count--; \
 		memset( (_p_tcpl_packet_) , 0x00 , sizeof(struct TcplPacket) ); \
+		(_p_env_)->unused_tcpl_packet_count--; \
+		\
 		if( (_p_env_)->cmd_line_para.output_debug ) \
 		{ \
 			fprintf( p_env->fp , "d | RECYCLING TCPL PACKET[%p]\n" , (_p_tcpl_packet_) ); \
@@ -265,7 +269,7 @@ struct TcplSessionId
 } ;
 
 /* TCP会话 */
-#define TCPLSESSION_MAX_PACKET_TRACE_COUNT	2
+#define TCPLSESSION_MAX_PACKET_TRACE_COUNT	100
 
 #define TCPLSESSION_STATE_DISCONNECTED		0
 #define TCPLSESSION_STATE_CONNECTING		1
@@ -294,8 +298,10 @@ struct TcplSessionId
 	{ \
 		memset( (_p_tcpl_session_) , 0x00 , sizeof(struct TcplSession) ); \
 		INIT_LIST_HEAD( & ((_p_tcpl_session_)->tcpl_packets_trace_list.this_node) ); \
+		\
 		list_add_tail( & ((_p_tcpl_session_)->this_node) , & ((_p_env_)->unused_tcpl_session.this_node) ); \
 		(_p_env_)->unused_tcpl_session_count++; \
+		\
 		if( (_p_env_)->cmd_line_para.output_debug ) \
 		{ \
 			fprintf( p_env->fp , "d | RECYCLING TCPL SESSION[%p]\n" , (_p_tcpl_session_) ); \
@@ -306,8 +312,9 @@ struct TcplSessionId
 	{ \
 		(_p_tcpl_session_) = list_first_entry( & ((_p_env_)->unused_tcpl_session.this_node) , struct TcplSession , this_node ) ; \
 		list_del( & ((_p_tcpl_session_)->this_node) ); \
-		(_p_env_)->unused_tcpl_session_count--; \
 		memset( (_p_tcpl_session_) , 0x00 , sizeof(struct TcplSession) ); \
+		(_p_env_)->unused_tcpl_session_count--; \
+		\
 		if( (_p_env_)->cmd_line_para.output_debug ) \
 		{ \
 			fprintf( p_env->fp , "d | REUSE TCPL SESSION[%p]\n" , (_p_tcpl_session_) ); \
@@ -411,6 +418,8 @@ struct TcplStatEnv
 	struct TcplPacket		unused_tcpl_packet ;
 	int				unused_tcpl_packet_count ;
 } ;
+
+extern struct TcplStatEnv	*g_p_env ;
 
 /* 会话结构树 */
 int LinkTcplSessionTreeNode( struct TcplStatEnv *p_tcpl_stat_env , struct TcplSession *p_tcpl_session );

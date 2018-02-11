@@ -99,6 +99,8 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 		}
 		
 		/* 每输出一条明细，删除一条 */
+		p_tcpl_session->total_packet_trace_count--;
+		p_tcpl_session->total_packet_trace_data_len -= p_tcpl_packet->packet_data_len_actually ;
 		if( p_env->unused_tcpl_packet_count < PENV_MAX_UNUSED_TCPLPACKET_COUNT )
 		{
 			RECYCLING_TCPL_PACKET( p_env , p_tcpl_packet )
@@ -107,9 +109,6 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 		{
 			DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
 		}
-		
-		p_tcpl_session->total_packet_trace_count--;
-		p_tcpl_session->total_packet_trace_data_len -= p_tcpl_packet->packet_data_len_actually ;
 	}
 	
 	p_tcpl_session->continue_trace_flag = 1 ;

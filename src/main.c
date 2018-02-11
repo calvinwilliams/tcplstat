@@ -16,10 +16,12 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_8_1[] = "0.8.1" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_8_1 ;
+char    __TCPLSTAT_VERSION_0_9_0[] = "0.9.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_9_0 ;
 
 struct TcplStatEnv	*g_p_env = NULL ;
+
+#define _TCPLSTAT_DEBUG_FLUSH		0
 
 /* 显示版本 */
 static void version()
@@ -92,7 +94,10 @@ static void SignalProc( int sig_no )
 			{
 				exit(1);
 			}
+
+#if _TCPLSTAT_DEBUG_FLUSH
 			setbuf( p_env->fp , NULL );
+#endif
 		}
 	}
 	
@@ -314,7 +319,9 @@ int main( int argc , char *argv[] )
 	{
 		p_env->fp = stdout ;
 	}
+#if _TCPLSTAT_DEBUG_FLUSH
 	setbuf( p_env->fp , NULL );
+#endif
 	
 	/* 设置信号灯 */
 	signal( SIGHUP , SIG_IGN );

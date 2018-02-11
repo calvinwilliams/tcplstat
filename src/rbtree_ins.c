@@ -27,6 +27,7 @@ int CompareTcplSessionTreeNodeEntry( void *pv1 , void *pv2 )
 funcFreeRbTreeNodeEntry FreeTcplSessionTreeNodeEntry ;
 void FreeTcplSessionTreeNodeEntry( void *pv )
 {
+	struct TcplStatEnv	*p_env = g_p_env ;
 	struct TcplSession	*p_tcpl_session = (struct TcplSession *)pv ;
 	
 	struct TcplPacket	*p_tcpl_packet = NULL ;
@@ -34,11 +35,10 @@ void FreeTcplSessionTreeNodeEntry( void *pv )
 	
 	list_for_each_entry_safe( p_tcpl_packet , p_next_tcpl_packet , & (p_tcpl_session->tcpl_packets_trace_list.this_node) , struct TcplPacket , this_node )
 	{
-		list_del( & (p_tcpl_packet->this_node) );
-		if( p_tcpl_packet->packet_data_intercepted )
-			free( p_tcpl_packet->packet_data_intercepted );
-		free( p_tcpl_packet );
+		DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
 	}
+	
+	DELETE_TCPL_SESSION( p_env , p_tcpl_session )
 	
 	return;
 }
