@@ -69,7 +69,11 @@ int LengthUtilEndOfText( char *p_curr , char *end )
 	
 	for( p = p_curr ; p <= end ; p++ )
 	{
-		if( ! (isprint(*p)||(*p)=='\t') )
+		if( (*p) == '\r' || (*p) == '\n' )
+		{
+			(*p) = ' ' ;
+		}
+		else if( ! (isprint(*p)||(*p)=='\t') )
 		{
 			p--;
 			break;
