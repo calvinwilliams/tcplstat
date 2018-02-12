@@ -15,8 +15,8 @@ SOFLAGS		=	-shared
 ESOFLAGS	=	
 
 # c源代码文件宏及推导规则
-CC		=	gcc -g -fPIC -O2 -Wall -Werror -fno-strict-aliasing
-CC_NOWARN	=	gcc -g -fPIC -O2
+CC		=	gcc -g -fPIC -O2 -Wall -Werror -fno-strict-aliasing -std=gnu99
+CC_NOWARN	=	gcc -g -fPIC -O2 -std=gnu99
 
 c_FILE_o	=	$(c_FILE:.c=.o)
 c_FILE2_o	=	$(c_FILE2:.c=.o)
@@ -95,6 +95,7 @@ ifneq ($(strip $(BININST)),)
 ifneq ($(strip $(BIN)),)
 	@for FILE in `echo $(BIN)` ; do \
 		if [ -f $(BININST)/$$FILE ] ; then \
+			echo $(RM) $(BININST)/$$FILE ; \
 			$(RM) $(BININST)/$$FILE ; \
 		fi ; \
 		if [ -f $$FILE ] ; then \
@@ -112,6 +113,7 @@ ifneq ($(strip $(BININST2)),)
 ifneq ($(strip $(BIN2)),)
 	@for FILE in `echo $(BIN2)` ; do \
 		if [ -f $(BININST2)/$$FILE ] ; then \
+			echo $(RM) $(BININST2)/$$FILE ; \
 			$(RM) $(BININST2)/$$FILE ; \
 		fi ; \
 		if [ -f $$FILE ] ; then \
@@ -130,6 +132,7 @@ ifneq ($(strip $(HDERINST)),)
 ifneq ($(strip $(HDER)),)
 	@for FILE in `echo $(HDER)` ; do \
 		if [ -f $(HDERINST)/$$FILE ] ; then \
+			echo $(RM) $(HDERINST)/$$FILE ; \
 			$(RM) $(HDERINST)/$$FILE ; \
 		fi ; \
 		if [ -f $$FILE ] ; then \
@@ -147,6 +150,7 @@ ifneq ($(strip $(HDERINST2)),)
 ifneq ($(strip $(HDER2)),)
 	@for FILE in `echo $(HDER2)` ; do \
 		if [ -f $(HDERINST2)/$$FILE ] ; then \
+			echo $(RM) $(HDERINST2)/$$FILE ; \
 			$(RM) $(HDERINST2)/$$FILE ; \
 		fi ; \
 		if [ -f $$FILE ] ; then \
@@ -165,6 +169,7 @@ ifneq ($(strip $(DFTHDERINST)),)
 ifneq ($(strip $(DFTHDER)),)
 	@for FILE in `echo $(DFTHDER)` ; do \
 		if [ -f $(DFTHDERINST)/$$FILE ] ; then \
+			echo $(RM) $(DFTHDERINST)/$$FILE ; \
 			$(RM) $(DFTHDERINST)/$$FILE ; \
 		fi ; \
 		if [ -f $$FILE ] ; then \
