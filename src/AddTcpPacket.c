@@ -226,29 +226,40 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 	list_add_tail( & (p_tcpl_packet->this_node) , & (p_tcpl_session->tcpl_packets_trace_list.this_node) );
 	
 	/* 嗅探SQL语句，在下次有效荷载时统计耗时并输出 */
-	if( p_env->cmd_line_para.output_sql && p_tcpl_packet->packet_data_len_intercepted > 0 )
+	if( p_env->cmd_line_para.output_sql && packet_data_len_intercepted > 0 )
 	{
-		if( p_tcpl_session->sql && p_last_oppo_tcpl_packet )
+		if( direction_flag == TCPLPACKET_DIRECTION )
 		{
-			fprintf( p_env->fp , "Q | %s.%06ld %ld.%06ld | %.*s\n"
-				, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
-				, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
-				, p_tcpl_session->sql_len , p_tcpl_session->sql );
-			p_last_oppo_tcpl_packet->is_lock = 0 ;
-			p_tcpl_session->sql = NULL ;
-		}
-		
-		p_tcpl_session->sql = FindSql( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
-		if( p_tcpl_session->sql )
-		{
-			if( p_env->cmd_line_para.output_debug )
+			if( p_tcpl_session->sql )
 			{
-				fprintf( p_env->fp , "q | %s.%06ld | %.*s\n"
-					, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
-					, p_tcpl_session->sql_len , p_tcpl_session->sql );
+				p_tcpl_session->sql = NULL ;
+				p_last_oppo_tcpl_packet->is_lock = 0 ;
 			}
 			
-			p_tcpl_packet->is_lock = 1 ;
+			p_tcpl_session->sql = FindSql( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
+			if( p_tcpl_session->sql )
+			{
+				if( p_env->cmd_line_para.output_debug )
+				{
+					fprintf( p_env->fp , "q | %s.%06ld | %.*s\n"
+						, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
+						, p_tcpl_session->sql_len , p_tcpl_session->sql );
+				}
+				
+				p_tcpl_packet->is_lock = 1 ;
+			}
+		}
+		else if( direction_flag == TCPLPACKET_OPPO_DIRECTION )
+		{
+			if( p_tcpl_session->sql && p_last_oppo_tcpl_packet )
+			{
+				fprintf( p_env->fp , "Q | %s.%06ld | %ld.%06ld | %.*s\n"
+					, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
+					, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
+					, p_tcpl_session->sql_len , p_tcpl_session->sql );
+				p_tcpl_session->sql = NULL ;
+				p_last_oppo_tcpl_packet->is_lock = 0 ;
+			}
 		}
 	}
 	
@@ -257,7 +268,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 	{
 		if( p_tcpl_session->http_first_line && p_last_oppo_tcpl_packet )
 		{
-			fprintf( p_env->fp , "H | %s.%06ld %ld.%06ld | %.*s\n"
+			fprintf( p_env->fp , "H | %s.%06ld | %ld.%06ld | %.*s\n"
 				, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
 				, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
 				, p_tcpl_session->http_first_line_len , p_tcpl_session->http_first_line );
