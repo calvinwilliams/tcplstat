@@ -433,7 +433,7 @@ char *memndup( const char *s, size_t n );
 char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode );
 int LengthUtilEndOfText( char *p_curr , char *end );
 char *ConvDateTimeHumanReadable( time_t tt );
-int DumpBuffer( FILE *fp , char *indentation , char *pathfilename , int buf_len , void *buf );
+int DumpBuffer( FILE *fp , char *indentation , int buf_len , void *buf );
 
 /* PCAP回调函数 */
 void PcapCallback( unsigned char *args , const struct pcap_pkthdr *header , const unsigned char *packet );
@@ -442,7 +442,7 @@ void PcapCallback( unsigned char *args , const struct pcap_pkthdr *header , cons
 int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct NetinetEthernetHeader *etherhdr , struct NetinetIpHeader *iphdr , struct NetinetTcpHeader *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
 
 /* 增加TCP分组 */
-int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
 
 /* 输出TCP会话和包明细 */
 void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );

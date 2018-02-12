@@ -30,7 +30,7 @@ char *memistr2_region( char *p_curr , char *find , char *end , unsigned char bin
 	
 	while( p_curr <= end )
 	{
-		if( binary_mode == 0 && ! isprint(*p_curr) )
+		if( binary_mode == 0 && ! (isprint(*p_curr)||(*p_curr)=='\t') )
 			break;
 		
 		if( p_match == NULL )
@@ -69,7 +69,7 @@ int LengthUtilEndOfText( char *p_curr , char *end )
 	
 	for( p = p_curr ; p <= end ; p++ )
 	{
-		if( ! isprint(*p) )
+		if( ! (isprint(*p)||(*p)=='\t') )
 		{
 			p--;
 			break;
@@ -91,7 +91,7 @@ char *ConvDateTimeHumanReadable( time_t tt )
 }
 
 /* 输出十六进制格式的数据 */
-int DumpBuffer( FILE *fp , char *indentation , char *pathfilename , int buf_len , void *buf )
+int DumpBuffer( FILE *fp , char *indentation , int buf_len , void *buf )
 {
 	int		lines_offset , bytes_offset ;
 	

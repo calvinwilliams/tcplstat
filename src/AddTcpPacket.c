@@ -42,7 +42,7 @@ static char *FindSql( char *packet_data_intercepted , uint32_t packet_data_len_i
 	p1 = memistr2_region( packet_data_intercepted , "INSERT" , end , 1 ) ;
 	if( p1 )
 	{
-		p2 = memistr2_region( p1+7 , "INFO" , end , 0 ) ;
+		p2 = memistr2_region( p1+7 , "INTO" , end , 0 ) ;
 		if( p2 )
 		{
 			(*p_sql_len) = LengthUtilEndOfText( p2+4 , end ) ;
@@ -165,7 +165,7 @@ static char *FindHttp( char *packet_data_intercepted , uint32_t packet_data_len_
 }
 
 /* 新增TCP分组到明细链表中 */
-int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
+int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_last_tcpl_packet = NULL ;
@@ -231,7 +231,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		if( p_tcpl_session->sql && p_last_oppo_tcpl_packet )
 		{
 			fprintf( p_env->fp , "Q | %s.%06ld %ld.%06ld | %.*s\n"
-				, ConvDateTimeHumanReadable(p_last_oppo_tcpl_packet->timestamp.tv_sec) , p_last_oppo_tcpl_packet->timestamp.tv_usec
+				, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
 				, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
 				, p_tcpl_session->sql_len , p_tcpl_session->sql );
 			p_last_oppo_tcpl_packet->is_lock = 0 ;
@@ -240,7 +240,16 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		
 		p_tcpl_session->sql = FindSql( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
 		if( p_tcpl_session->sql )
+		{
+			if( p_env->cmd_line_para.output_debug )
+			{
+				fprintf( p_env->fp , "q | %s.%06ld | %.*s\n"
+					, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
+					, p_tcpl_session->sql_len , p_tcpl_session->sql );
+			}
+			
 			p_tcpl_packet->is_lock = 1 ;
+		}
 	}
 	
 	/* 嗅探HTTP首行，在下次有效荷载时统计耗时并输出 */
@@ -249,7 +258,7 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		if( p_tcpl_session->http_first_line && p_last_oppo_tcpl_packet )
 		{
 			fprintf( p_env->fp , "H | %s.%06ld %ld.%06ld | %.*s\n"
-				, ConvDateTimeHumanReadable(p_last_oppo_tcpl_packet->timestamp.tv_sec) , p_last_oppo_tcpl_packet->timestamp.tv_usec
+				, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
 				, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
 				, p_tcpl_session->http_first_line_len , p_tcpl_session->http_first_line );
 			p_last_oppo_tcpl_packet->is_lock = 0 ;
@@ -258,7 +267,16 @@ int AddTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr 
 		
 		p_tcpl_session->http_first_line = FindHttp( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->http_first_line_len) ) ;
 		if( p_tcpl_session->http_first_line )
+		{
+			if( p_env->cmd_line_para.output_debug )
+			{
+				fprintf( p_env->fp , "h | %s.%06ld | %.*s\n"
+					, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
+					, p_tcpl_session->http_first_line_len , p_tcpl_session->http_first_line );
+			}
+			
 			p_tcpl_packet->is_lock = 1 ;
+		}
 	}
 	
 	/* 如果不是握手和分手，统计正向/反向的最小、平均和、最大延迟 */

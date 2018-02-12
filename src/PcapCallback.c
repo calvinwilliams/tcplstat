@@ -49,6 +49,10 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 			iphdr = (struct NetinetIpHeader *)( (char*)sll + sizeof(struct sll_header) ) ;
 			break;
 #endif
+		case DLT_NULL :
+			ether_type = ETHERTYPE_IP ;
+			iphdr = (struct NetinetIpHeader *)( packet + 4 ) ;
+			break;
 		case DLT_EN10MB :
 			etherhdr = (struct NetinetEthernetHeader *)packet ;
 			ether_type = ntohs( etherhdr->_ether_type ) ;
@@ -61,13 +65,20 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 			break;
 #endif
 		default :
+			fprintf( p_env->fp , "*** WARN : linklayer header type[%d] unknow\n" , linklayer_header_type );
 			return;
 	}
 	
 	if( ether_type != ETHERTYPE_IP )
+	{
+		fprintf( p_env->fp , "*** WARN : ether type[%d] must be ETHERTYPE_IP\n" , ether_type );
 		return;
+	}
 	if( iphdr->_ip_p != IPPROTO_TCP )
+	{
+		fprintf( p_env->fp , "*** WARN : ip protocol[%d] must be IPPROTO_TCP\n" , iphdr->_ip_p );
 		return;
+	}
 	iphdr_size = IP_HL(iphdr)*4 ;
 	tcphdr = (struct NetinetTcpHeader *)( (char*)iphdr + iphdr_size ) ;
 	tcphdr_size = TH_OFF(tcphdr)*4 ;
@@ -93,7 +104,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	/* 输出事件日志 */
 	if( p_env->cmd_line_para.output_event )
 	{
-		fprintf( p_env->fp , "E | %s.%06ld | LHT[%d] | SMAC[%s] DMAC[%s] | SIP[%s] DIP[%s] | SPORT[%d] DPORT[%d] SEQ[%u] ACKSEQ[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]BYTES\n"
+		fprintf( p_env->fp , "E | %s.%06ld | LHT[%d] | SMAC[%s] DMAC[%s] | SIP[%s] DIP[%s] | SPORT[%d] DPORT[%d] SEQ[%u] ACK[%u] SYN[%d] ACK[%d] FIN[%d] PSH[%d] RST[%d] URG[%d] | [%d]BYTES\n"
 			, ConvDateTimeHumanReadable(p_env->fixed_timestamp.tv_sec) , p_env->fixed_timestamp.tv_usec
 			, linklayer_header_type
 			, tcpl_addr_hr.src_mac , tcpl_addr_hr.dst_mac
@@ -105,7 +116,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 		
 		if( packet_data_len_intercepted > 0 )
 		{
-			DumpBuffer( p_env->fp , "E |     " , "#stdout" , packet_data_len_intercepted , packet_data_intercepted );
+			DumpBuffer( p_env->fp , "E |     " , packet_data_len_intercepted , packet_data_intercepted );
 		}
 	}
 	

@@ -71,7 +71,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				p_tcpl_session->status[1] = TCPLSESSION_STATUS_SYN ;
 				
 				/* 记录TCP分组明细 */
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+				nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
 				
@@ -114,7 +114,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					return nret;
 				
 				/* 记录TCP分组明细 */
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+				nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
 				
@@ -160,7 +160,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			}
 			
 			/* 记录TCP分组明细 */
-			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+			nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
 			
@@ -204,7 +204,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				}
 				
 				/* 记录TCP分组明细 */
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+				nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
 				
@@ -232,7 +232,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			p_tcpl_session->state = TCPLSESSION_STATE_DISCONNECTED ;
 			
 			/* 记录TCP分组明细 */
-			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+			nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
 			
@@ -270,7 +270,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				p_tcpl_session->state = TCPLSESSION_STATE_DISCONNECTED ;
 				
 				/* 记录TCP分组明细 */
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+				nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
 				
@@ -314,7 +314,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			}
 			
 			/* 记录TCP分组明细 */
-			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+			nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
 			
@@ -344,7 +344,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				DIFF_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_last_tcpl_packet->timestamp )
 				
 				/* 记录TCP分组明细 */
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+				nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
 				
@@ -381,7 +381,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			/* 正常TCP分组往来 */
 			if( p_tcpl_session->status[1] == TCPLSESSION_STATUS_SYN && p_tcpl_session->status[0] == TCPLSESSION_STATUS_SYN )
 			{
-				nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+				nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 				if( nret )
 					return nret;
 				
@@ -406,7 +406,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					DIFF_TIMEVAL( p_tcpl_session->wait_for_second_ack_elapse , p_last_tcpl_packet->timestamp )
 					
 					/* 记录TCP分组明细 */
-					nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+					nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_OPPO_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 					if( nret )
 						return nret;
 					
@@ -462,7 +462,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				return nret;
 			
 			/* 记录TCP分组明细 */
-			nret = AddTcpPacket( p_env , pcaphdr , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
+			nret = AddTcpPacket( p_env , p_tcpl_session , TCPLPACKET_DIRECTION , tcphdr , packet_data_intercepted , packet_data_len_intercepted , packet_data_len_actually ) ;
 			if( nret )
 				return nret;
 			

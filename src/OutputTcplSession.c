@@ -93,7 +93,7 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 			{
 				if( p_tcpl_packet->packet_data_len_intercepted > 0 )
 				{
-					DumpBuffer( p_env->fp , "D |     " , "#stdout" , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
+					DumpBuffer( p_env->fp , "D |     " , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
 				}
 			}
 		}

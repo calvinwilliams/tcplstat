@@ -16,12 +16,12 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_9_0[] = "0.9.0" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_9_0 ;
+char    __TCPLSTAT_VERSION_0_9_1[] = "0.9.1" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_9_1 ;
 
 struct TcplStatEnv	*g_p_env = NULL ;
 
-#define _TCPLSTAT_DEBUG_FLUSH		0
+#define _TCPLSTAT_DEBUG_FLUSH		1
 
 /* œ‘ æ∞Ê±æ */
 static void version()
