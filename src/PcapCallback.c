@@ -23,7 +23,7 @@ void PcapCallback( u_char *args , const struct pcap_pkthdr *pcaphdr , const u_ch
 	int				tcphdr_size ;
 	unsigned short			ether_type ;
 	char				*packet_data_intercepted = NULL ;
-	uint32_t			packet_data_len_intercepted ;
+	UINT32				packet_data_len_intercepted ;
 	
 	struct TcplAddrHumanReadable	tcpl_addr_hr ;
 	

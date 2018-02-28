@@ -88,7 +88,11 @@ char *ConvDateTimeHumanReadable( time_t tt )
 	struct tm	tm ;
 	static char	date_time_buf[ 19 + 1 ] ;
 	
+#if ( defined __linux ) || ( defined _AIX )
 	localtime_r( & tt , & tm ) ;
+#elif ( defined _WIN32 )
+	localtime_s( & tm , & tt ) ;
+#endif
 	sprintf( date_time_buf , "%04d-%02d-%02dT%02d:%02d:%02d" , tm.tm_year+1900 , tm.tm_mon+1 , tm.tm_mday , tm.tm_hour , tm.tm_min , tm.tm_sec );
 	
 	return date_time_buf;

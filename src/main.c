@@ -16,8 +16,8 @@ sudo tcplstat -f "tcp port 445" -o "dESPD"
 echo "hello" | nc 192.168.6.21 445
 */
 
-char    __TCPLSTAT_VERSION_0_9_1[] = "0.9.1" ;
-char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_9_1 ;
+char    __TCPLSTAT_VERSION_0_10_0[] = "0.10.0" ;
+char    *__TCPLSTAT_VERSION = __TCPLSTAT_VERSION_0_10_0 ;
 
 struct TcplStatEnv	*g_p_env = NULL ;
 
@@ -46,6 +46,8 @@ static void usage()
 	printf( "NOTICE : See pcap-filter(7) for the syntax of filter\n" );
 	return;
 }
+
+#if ( defined __linux ) || ( defined _AIX )
 
 /* 信号灯回调函数 */
 static void SignalProc( int sig_no )
@@ -104,6 +106,8 @@ static void SignalProc( int sig_no )
 	return;
 }
 
+#endif
+
 /* 主入口 */
 int main( int argc , char *argv[] )
 {
@@ -114,7 +118,9 @@ int main( int argc , char *argv[] )
 	bpf_u_int32		net_mask ;
 	struct bpf_program	pcap_filter ;
 	
+#if ( defined __linux ) || ( defined _AIX )
 	struct sigaction	act ;
+#endif
 	
 	int			nret = 0 ;
 	
@@ -184,7 +190,7 @@ int main( int argc , char *argv[] )
 		}
 		else if( STRCMP( argv[i] , == , "--max-packet-trace-count" ) && i + 1 < argc )
 		{
-			p_env->cmd_line_para.max_packet_trace_count = atoi(argv[i+1]) ;
+			p_env->cmd_line_para.max_packet_trace_count = (UINT32)atoi(argv[i+1]) ;
 			i++;
 		}
 		else if( STRCMP( argv[i] , == , "-o" ) )
@@ -323,6 +329,7 @@ int main( int argc , char *argv[] )
 	setbuf( p_env->fp , NULL );
 #endif
 	
+#if ( defined __linux ) || ( defined _AIX )
 	/* 设置信号灯 */
 	signal( SIGHUP , SIG_IGN );
 	signal( SIGPIPE , SIG_IGN );
@@ -333,6 +340,7 @@ int main( int argc , char *argv[] )
 	sigaction( SIGTERM , & act , NULL );
 	sigaction( SIGINT , & act , NULL );
 	sigaction( SIGUSR1 , & act , NULL );
+#endif
 	
 	/* 进入嗅探主循环，捕获TCP分组后调用回调函数 */
 	pcap_loop( p_env->pcap , -1 , PcapCallback , (u_char *)p_env );
