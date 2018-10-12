@@ -9,6 +9,11 @@
 #ifndef _H_TCPLSTAT_
 #define _H_TCPLSTAT_
 
+#if ( defined _WIN32 )
+#include <winsock2.h>
+#endif
+
+#if ( defined __linux ) || ( defined _AIX )
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,20 +25,45 @@
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
-
 #if ( defined __linux__ )
 #include <net/ethernet.h>
 #elif ( defined _AIX )
 #include <netinet/if_ether.h>
 #endif
+#elif ( defined _WIN32 )
+#include <windows.h>
+#endif
 
 #include "pcap.h"
+
 #if ( defined __linux__ )
 #include "pcap/sll.h"
 #elif ( defined _AIX )
 #undef _AIX
 #include "net/bpf.h"
 #define _AIX
+#elif ( defined _WIN32 )
+#define ETHERTYPE_IP            0x0800          /* IP */
+#endif
+
+#if ( defined __linux ) || ( defined _AIX )
+#define INT8	int8_t
+#define INT16	int16_t
+#define INT32	int32_t
+#define INT64	int64_t
+#define UINT8	uint8_t
+#define UINT16	uint16_t
+#define UINT32	uint32_t
+#define UINT64	uint64_t
+#elif ( defined _WIN32 )
+#define INT8	__int8
+#define INT16	__int16
+#define INT32	__int32
+#define INT64	__int64
+#define UINT8	unsigned __int8
+#define UINT16	unsigned __int16
+#define UINT32	unsigned __int32
+#define UINT64	unsigned __int64
 #endif
 
 #include "list.h"
@@ -46,13 +76,12 @@
 #endif
 
 #ifndef STRICMP
-#ifdef _TYPE_OS_WINDOWS_
-#define STRICMP(_a_,_C_,_b_) ( stricmp(_a_,_b_) _C_ 0 )
-#define STRNICMP(_a_,_C_,_b_,_n_) ( strnicmp(_a_,_b_,_n_) _C_ 0 )
-#endif
-#if ( defined _TYPE_OS_AIX_ ) | ( defined _TYPE_OS_SCO_ ) | ( defined _TYPE_OS_LINUX_ )
+#if ( defined __linux ) || ( defined _AIX )
 #define STRICMP(_a_,_C_,_b_) ( strcasecmp(_a_,_b_) _C_ 0 )
 #define STRNICMP(_a_,_C_,_b_,_n_) ( strncasecmp(_a_,_b_,_n_) _C_ 0 )
+#elif ( defined _WIN32 )
+#define STRICMP(_a_,_C_,_b_) ( stricmp(_a_,_b_) _C_ 0 )
+#define STRNICMP(_a_,_C_,_b_,_n_) ( strnicmp(_a_,_b_,_n_) _C_ 0 )
 #endif
 #endif
 
@@ -251,8 +280,8 @@ struct TcplPacket
 	char			packet_flags[ 6 + 1 ] ; /*SFPARU*/
 	
 	char			*packet_data_intercepted ;
-	uint32_t		packet_data_len_intercepted ;
-	uint32_t		packet_data_len_actually ;
+	UINT32			packet_data_len_intercepted ;
+	UINT32			packet_data_len_actually ;
 	
 	unsigned char		is_lock ;
 	
@@ -263,9 +292,9 @@ struct TcplPacket
 struct TcplSessionId
 {
 	struct in_addr		client_ip ;
-	uint16_t		client_port ;
+	UINT16			client_port ;
 	struct in_addr		server_ip ;
-	uint16_t		server_port ;
+	UINT16			server_port ;
 } ;
 
 /* TCP会话 */
@@ -364,8 +393,8 @@ struct TcplSession
 	struct TcplPacket		*p_recent_packet ;
 	struct TcplPacket		*p_recent_oppo_packet ;
 	
-	uint32_t			total_packet_trace_count ;
-	uint32_t			total_packet_trace_data_len ;
+	UINT32				total_packet_trace_count ;
+	UINT32				total_packet_trace_data_len ;
 	
 	unsigned char			continue_trace_flag ;
 	
@@ -384,7 +413,7 @@ struct CommandLineParameters
 {
 	char			*network_interface ;
 	char			*filter_string ;
-	int			max_packet_trace_count ;
+	UINT32			max_packet_trace_count ;
 	unsigned char		output_debug ;
 	unsigned char		output_event ;
 	unsigned char		output_session ;
@@ -439,10 +468,10 @@ int DumpBuffer( FILE *fp , char *indentation , int buf_len , void *buf );
 void PcapCallback( unsigned char *args , const struct pcap_pkthdr *header , const unsigned char *packet );
 
 /* 处理TCP分组 */
-int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct NetinetEthernetHeader *etherhdr , struct NetinetIpHeader *iphdr , struct NetinetTcpHeader *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct NetinetEthernetHeader *etherhdr , struct NetinetIpHeader *iphdr , struct NetinetTcpHeader *tcphdr , struct TcplAddrHumanReadable *p_tcpl_addr_hr , char *packet_data_intercepted , UINT32 packet_data_len_intercepted , UINT32 packet_data_len_actually );
 
 /* 增加TCP分组 */
-int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually );
+int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , UINT32 packet_data_len_intercepted , UINT32 packet_data_len_actually );
 
 /* 输出TCP会话和包明细 */
 void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );
