@@ -283,7 +283,7 @@ struct TcplPacket
 	UINT32			packet_data_len_intercepted ;
 	UINT32			packet_data_len_actually ;
 	
-	unsigned char		is_lock ;
+	unsigned char		is_outputed ;
 	
 	struct list_head	this_node ;
 } ;
@@ -474,7 +474,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , UINT32 packet_data_len_intercepted , UINT32 packet_data_len_actually );
 
 /* 输出TCP会话和包明细 */
-void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session );
+void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char before_free_flag );
 
 #endif
 

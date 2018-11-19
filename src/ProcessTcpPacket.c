@@ -240,7 +240,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				OUTPUT_SESSION_EVENT( "REMOVE" , TCPLPACKET_DIRECTION , p_tcpl_session )
 			
 			/* 输出TCP会话信息 */
-			OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+			OutputTcplSession( p_env , pcaphdr , p_tcpl_session , 1 );
 			
 			/* 从TCP会话树上删除 */
 			UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
@@ -278,7 +278,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					OUTPUT_SESSION_EVENT( "REMOVE" , TCPLPACKET_OPPO_DIRECTION , p_tcpl_session )
 				
 				/* 输出TCP会话信息 */
-				OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+				OutputTcplSession( p_env , pcaphdr , p_tcpl_session , 1 );
 				
 				/* 从TCP会话树上删除 */
 				UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
@@ -329,7 +329,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 			if( p_tcpl_session->total_packet_trace_count >= p_env->cmd_line_para.max_packet_trace_count )
 			{
 				/* 输出TCP会话信息 */
-				OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+				OutputTcplSession( p_env , pcaphdr , p_tcpl_session , 0 );
 			}
 			
 			return 0;
@@ -354,7 +354,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 					OUTPUT_SESSION_EVENT( "REMOVE" , TCPLPACKET_DIRECTION , p_tcpl_session )
 				
 				/* 输出TCP会话信息 */
-				OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+				OutputTcplSession( p_env , pcaphdr , p_tcpl_session , 1 );
 				
 				/* 从TCP会话树上删除 */
 				UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );
@@ -391,7 +391,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 				if( p_tcpl_session->total_packet_trace_count >= p_env->cmd_line_para.max_packet_trace_count )
 				{
 					/* 输出TCP会话信息 */
-					OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+					OutputTcplSession( p_env , pcaphdr , p_tcpl_session , 0 );
 				}
 				
 				return 0;
@@ -416,7 +416,7 @@ int ProcessTcpPacket( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcap
 						OUTPUT_SESSION_EVENT( "REMOVE" , TCPLPACKET_OPPO_DIRECTION , p_tcpl_session )
 					
 					/* 输出TCP会话信息 */
-					OutputTcplSession( p_env , pcaphdr , p_tcpl_session );
+					OutputTcplSession( p_env , pcaphdr , p_tcpl_session , 1 );
 					
 					/* 从TCP会话树上删除 */
 					UnlinkTcplSessionTreeNode( p_env , p_tcpl_session );

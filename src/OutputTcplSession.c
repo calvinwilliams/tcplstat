@@ -9,7 +9,7 @@
 #include "tcplstat_in.h"
 
 /* 输出TCP会话信息 */
-void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session )
+void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pcaphdr , struct TcplSession *p_tcpl_session , unsigned char before_free_flag )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_next_tcpl_packet = NULL ;
@@ -66,11 +66,8 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 	{
 		char	*direct_string = NULL ;
 		
-		if( p_env->cmd_line_para.output_session_packet )
+		if( p_env->cmd_line_para.output_session_packet && p_tcpl_packet->is_outputed == 0 )
 		{
-			if( p_tcpl_packet->is_lock == 1 )
-				continue;
-			
 			if( p_tcpl_packet->direction_flag == 1 )
 				direct_string = "->" ;
 			else
@@ -96,18 +93,23 @@ void OutputTcplSession( struct TcplStatEnv *p_env , const struct pcap_pkthdr *pc
 					DumpBuffer( p_env->fp , "D |     " , p_tcpl_packet->packet_data_len_intercepted , p_tcpl_packet->packet_data_intercepted );
 				}
 			}
+			
+			p_tcpl_packet->is_outputed = 1 ;
 		}
 		
-		/* 每输出一条明细，删除一条 */
-		p_tcpl_session->total_packet_trace_count--;
-		p_tcpl_session->total_packet_trace_data_len -= p_tcpl_packet->packet_data_len_actually ;
-		if( p_env->unused_tcpl_packet_count < PENV_MAX_UNUSED_TCPLPACKET_COUNT )
+		if( before_free_flag || ( p_tcpl_packet != p_tcpl_session->p_recent_packet && p_tcpl_packet != p_tcpl_session->p_recent_oppo_packet ) )
 		{
-			RECYCLING_TCPL_PACKET( p_env , p_tcpl_packet )
-		}
-		else
-		{
-			DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
+			/* 每输出一条明细，删除一条 */
+			p_tcpl_session->total_packet_trace_count--;
+			p_tcpl_session->total_packet_trace_data_len -= p_tcpl_packet->packet_data_len_actually ;
+			if( p_env->unused_tcpl_packet_count < PENV_MAX_UNUSED_TCPLPACKET_COUNT )
+			{
+				RECYCLING_TCPL_PACKET( p_env , p_tcpl_packet )
+			}
+			else
+			{
+				DELETE_TCPL_PACKET( p_env , p_tcpl_packet )
+			}
 		}
 	}
 	
