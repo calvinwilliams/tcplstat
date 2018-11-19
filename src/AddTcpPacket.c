@@ -233,8 +233,6 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 			if( p_tcpl_session->sql )
 			{
 				p_tcpl_session->sql = NULL ;
-				if( p_last_oppo_tcpl_packet )
-					p_last_oppo_tcpl_packet->is_lock = 0 ;
 			}
 			
 			p_tcpl_session->sql = FindSql( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
@@ -246,8 +244,6 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 						, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
 						, p_tcpl_session->sql_len , p_tcpl_session->sql );
 				}
-				
-				p_tcpl_packet->is_lock = 1 ;
 			}
 		}
 		else if( direction_flag == TCPLPACKET_OPPO_DIRECTION )
@@ -259,7 +255,6 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 					, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
 					, p_tcpl_session->sql_len , p_tcpl_session->sql );
 				p_tcpl_session->sql = NULL ;
-				p_last_oppo_tcpl_packet->is_lock = 0 ;
 			}
 		}
 	}
@@ -273,7 +268,6 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 				, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
 				, p_tcpl_packet->last_oppo_packet_elapse.tv_sec , p_tcpl_packet->last_oppo_packet_elapse.tv_usec
 				, p_tcpl_session->http_first_line_len , p_tcpl_session->http_first_line );
-			p_last_oppo_tcpl_packet->is_lock = 0 ;
 			p_tcpl_session->http_first_line = NULL ;
 		}
 		
@@ -286,16 +280,18 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 					, ConvDateTimeHumanReadable(p_tcpl_packet->timestamp.tv_sec) , p_tcpl_packet->timestamp.tv_usec
 					, p_tcpl_session->http_first_line_len , p_tcpl_session->http_first_line );
 			}
-			
-			p_tcpl_packet->is_lock = 1 ;
 		}
 	}
 	
 	/* 如果不是握手和分手，统计正向/反向的最小、平均和、最大延迟 */
 	if( direction_flag == TCPLPACKET_DIRECTION )
+	{
 		p_tcpl_session->p_recent_packet = p_tcpl_packet ;
+	}
 	else
+	{
 		p_tcpl_session->p_recent_oppo_packet = p_tcpl_packet ;
+	}
 	
 	if( p_tcpl_session->state == TCPLSESSION_STATE_CONNECTED )
 	{

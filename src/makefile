@@ -27,10 +27,14 @@ BININST		=	$(_BININST)
 CFLAGS		=	-I$(HOME)/include \
 			$(_CFLAGS) \
 
+#			-pg \
+
 ###### 链接选项
 LFLAGS		=	-L$(HOME)/lib \
 			$(_LFLAGS) \
 			-lpcap \
+
+#			-pg \
 
 ###### 额外宏定义区
 CLEAN_ADDITION	=
