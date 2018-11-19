@@ -5,7 +5,8 @@ tcplstat - TCP网络监控工具
 
 - [1. 概述](#1-概述)
 - [2. 安装](#2-安装)
-    - [2.1. 源码编译安装](#21-源码编译安装)
+    - [2.1. 源码编译安装（Linux操作系统）](#21-源码编译安装linux操作系统)
+    - [2.2. 源码编译安装（WINDOWS操作系统；VS2008开发环境）](#22-源码编译安装windows操作系统vs2008开发环境)
 - [3. 使用](#3-使用)
     - [3.1. 命令行参数说明](#31-命令行参数说明)
     - [3.2. 一个示例（即时输出TCP分组事件）](#32-一个示例即时输出tcp分组事件)
@@ -27,11 +28,19 @@ tcplstat在实现基础网络监控功能时还实现了采集分析SQL耗时和HTTP耗时信息，同样也是*
 
 tcplstat是开源的，除了引用了Linux内核的红黑树和链表源码外，自身源码只有1500行左右，源码结构简单易读。
 
+tcplstat跨主流平台Linux、WINDOWS、AIX。
+
 # 2. 安装
 
-（理论上tcplstat可以安装在任何有libpcap的环境，包括Linux、WINDOWS、AIX等，以下以Linux操作系统为例）
+理论上tcplstat可以安装在任何有libpcap的环境，包括Linux、WINDOWS、AIX等。
 
-## 2.1. 源码编译安装
+Linux/AIX上编译安装tcplstat前需先安装libpcap-devel；只运行tcplstat前需先安装libpcap。
+
+WINDOWS上编译安装tcplstat前需先安装winpcap开发包；只运行tcplstat前需先安装winpcap运行包。
+
+**注意：winpcap不能嗅探回环接口网络包（含本地访问本地），如果有嗅探回环接口需求请安装npcap替换winpcap。**
+
+## 2.1. 源码编译安装（Linux操作系统）
 
 从tcplstat源码托管站点（网址在最后）下载最新源码包，解开并进入源码目录
 
@@ -74,9 +83,15 @@ cp -rf tcplstat /home/calvin/bin/
 
 ```
 $ tcplstat -v
-tcplstat v0.5.0 build Feb  6 2018 22:40:44
+tcplstat v0.10.0 build Feb 28 2018 23:14:00
 copyright by calvin<calvinwilliams@163.com> 2018
 ```
+
+## 2.2. 源码编译安装（WINDOWS操作系统；VS2008开发环境）
+
+用VS2008打开src\vs2008\vs2008.sln，配置winpcap头文件和库文件路径，构建可执行程序即可。
+
+**注意：源码包bin\tcplstat.exe是我在WIN10环境里链接出来的可执行程序，可直接执行使用。**
 
 # 3. 使用
 
@@ -98,13 +113,15 @@ USAGE : tcplstat -v
 NOTICE : See pcap-filter(7) for the syntax of filter
 ```
 
-* `-i`设置网络设备接口，不设置则默认使用`any`
-* `-f`设置网络过滤规则，比如`tcp port 445`嗅探所有连接到端口445的往来TCP分组，具体参见`pcap-filter(7)`
-* `-o`一旦捕获到TCP分组，输出数据类型，E表示输出分组事件，S表示连接断开输出会话统计信息，P表示连接断开输出TCP分组统计信息，D表示连接断开输出TCP分组数据信息，d表示输出调试信息
-* `--sql`捕获SQL统计耗时信息
-* `--http`捕获HTTP统计耗时信息
-* `--max-packet-trace-count`针对长连接不释放，总是不能侦测到连接断开也就不能输出会话总结信息，该选项设置TCP分组累积到多少时强制输出并清空TCP分组明细信息，默认为1000，下次输出会话统计信息时前缀从'E |'变成'E -'
-* `--log-file`输出到日志文件，不设置文件则输出到屏幕
+* `-v` 显示版本信息
+* `-l` 列出所有网络设备，传递给`-i`，尤其是在WINDOWS上网络设备名不好猜
+* `-i` 设置网络设备接口，不设置则默认使用`any`
+* `-f` 设置网络过滤规则，比如`tcp port 445`嗅探所有连接到端口445的往来TCP分组，具体参见`pcap-filter(7)`
+* `-o` 一旦捕获到TCP分组，输出数据类型，E表示输出分组事件，S表示连接断开输出会话统计信息，P表示连接断开输出TCP分组统计信息，D表示连接断开输出TCP分组数据信息，d表示输出调试信息
+* `--sql` 捕获SQL统计耗时信息
+* `--http` 捕获HTTP统计耗时信息
+* `--max-packet-trace-count` 针对长连接不释放，总是不能侦测到连接断开也就不能输出会话总结信息，该选项设置TCP分组累积到多少时强制输出并清空TCP分组明细信息，默认为1000，下次输出会话统计信息时前缀从'E |'变成'E -'
+* `--log-file` 输出到日志文件，不设置文件则输出到屏幕
 
 **注意：执行tcplstat需要root权限。**
 

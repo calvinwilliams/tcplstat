@@ -9,7 +9,7 @@
 #include "tcplstat_in.h"
 
 /* 在TCP分组有效载荷中尝试搜索SQL语句 */
-static char *FindSql( char *packet_data_intercepted , uint32_t packet_data_len_intercepted , int *p_sql_len )
+static char *FindSql( char *packet_data_intercepted , UINT32 packet_data_len_intercepted , int *p_sql_len )
 {
 	char		*p1 = NULL ;
 	char		*p2 = NULL ;
@@ -67,7 +67,7 @@ static char *FindSql( char *packet_data_intercepted , uint32_t packet_data_len_i
 }
 
 /* 在TCP分组有效载荷中尝试搜索HTTP首行 */
-static char *FindHttp( char *packet_data_intercepted , uint32_t packet_data_len_intercepted , int *p_http_first_line_len )
+static char *FindHttp( char *packet_data_intercepted , UINT32 packet_data_len_intercepted , int *p_http_first_line_len )
 {
 	char		*p1 = NULL ;
 	char		*p2 = NULL ;
@@ -165,7 +165,7 @@ static char *FindHttp( char *packet_data_intercepted , uint32_t packet_data_len_
 }
 
 /* 新增TCP分组到明细链表中 */
-int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , uint32_t packet_data_len_intercepted , uint32_t packet_data_len_actually )
+int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session , unsigned char direction_flag , struct NetinetTcpHeader *tcphdr , char *packet_data_intercepted , UINT32 packet_data_len_intercepted , UINT32 packet_data_len_actually )
 {
 	struct TcplPacket	*p_tcpl_packet = NULL ;
 	struct TcplPacket	*p_last_tcpl_packet = NULL ;
