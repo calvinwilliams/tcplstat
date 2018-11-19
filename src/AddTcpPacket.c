@@ -233,7 +233,8 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 			if( p_tcpl_session->sql )
 			{
 				p_tcpl_session->sql = NULL ;
-				p_last_oppo_tcpl_packet->is_lock = 0 ;
+				if( p_last_oppo_tcpl_packet )
+					p_last_oppo_tcpl_packet->is_lock = 0 ;
 			}
 			
 			p_tcpl_session->sql = FindSql( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
