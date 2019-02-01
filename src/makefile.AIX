@@ -15,8 +15,9 @@ SOFLAGS		=	-G -bnoentry
 ESOFLAGS	=	-bdynamic -brtl -qcpluscm
 
 # c源代码文件宏及推导规则
-CC		=	xlc -q64 -O2 -qlanglvl=ansi -qsrcmsg -qinfo=dcl:eff:ini:par:pro:rea:ret
-CC_NOWARN	=	xlc -q64 -O2
+#CC		=	xlc -q64 -O2 -qtls -D_THREAD_SAFE -qlanglvl=ansi -qsrcmsg -qinfo=dcl:eff:ini:par:pro:rea:ret
+CC		=	xlc -q64 -O2 -qtls -D_THREAD_SAFE 
+CC_NOWARN	=	xlc -q64 -O2 -qtls -D_THREAD_SAFE
 
 c_FILE_o	=	$(c_FILE:.c=.o)
 c_FILE2_o	=	$(c_FILE2:.c=.o)
@@ -49,10 +50,14 @@ BININST		=	$(_BININST)
 CFLAGS		=	-I$(HOME)/include \
 			$(_CFLAGS) \
 
+#			-pg \
+
 ###### 链接选项
 LFLAGS		=	-L$(HOME)/lib \
 			$(_LFLAGS) \
 			-lpcap \
+
+#			-pg \
 
 ###### 额外宏定义区
 CLEAN_ADDITION	=
@@ -60,6 +65,9 @@ CLEAN_ADDITION	=
 ###### 加载mktpl模板库
 # 最终目标列表
 all	:	$(OBJ) $(OBJ2) $(LIB) $(LIB2) $(SQL) $(NOINST_OBJ) $(BIN) $(BIN2)
+
+prepro_all	:	$(PREPRO)
+
 
 # 文件系统宏
 CD		=	cd
@@ -72,8 +80,9 @@ MKDIR		=	mkdir -p
 _FILE_CLEAN	=	$(c_FILE_CLEAN) $(cpp_FILE_CLEAN) $(SQC_FILE_CLEAN) $(ec_FILE_CLEAN) $(ec_FILE2_CLEAN) $(csm_FILE_CLEAN) $(c_html_FILE_CLEAN) $(cui_FILE_CLEAN) $(dtd_FILE_CLEAN) $(prt_FILE_CLEAN) $(fmd_FILE_CLEAN) $(smd_FILE_CLEAN) $(def_FILE_CLEAN) $(act_FILE_CLEAN)
 
 # 清理删除规则
+#@for FILE in "$(_FILE_CLEAN) $(BIN) $(BIN2) $(LIB) $(LIB2) $(OBJ) $(OBJ2) $(NOINST_OBJ) $(CLEAN_ADDITION)" ; do 
 clean		:
-	@for FILE in $(_FILE_CLEAN) $(BIN) $(BIN2) $(LIB) $(LIB2) $(OBJ) $(OBJ2) $(NOINST_OBJ) $(CLEAN_ADDITION) ; do \
+	@for FILE in "$(_FILE_CLEAN) $(BIN) $(BIN2) $(LIB) $(LIB2) $(OBJ) $(OBJ2) $(NOINST_OBJ) $(CLEAN_ADDITION)" ; do \
 		echo $(RM) $$FILE ; \
 		$(RM) $$FILE ; \
 	done
@@ -91,8 +100,9 @@ install		:	all
 			$(MKDIR) $(BININST) ; \
 		fi ; \
 		for FILE in `echo $(BIN)` ; do \
-			echo $(CP) $$FILE $(BININST)/ ; \
+			echo $(RM) $(BININST)/$$FILE ; \
 			$(RM) $(BININST)/$$FILE ; \
+			echo $(CP) $$FILE $(BININST)/ ; \
 			$(CP) $$FILE $(BININST)/ ; \
 		done \
 	fi
@@ -114,8 +124,9 @@ install		:	all
 			$(MKDIR) $(HDERINST) ; \
 		fi ; \
 		for FILE in `echo $(HDER)` ; do \
-			echo $(CP) $$FILE $(HDERINST)/ ; \
+			echo $(RM) $(HDERINST)/$$FILE ; \
 			$(RM) $(HDERINST)/$$FILE ; \
+			echo $(CP) $$FILE $(HDERINST)/ ; \
 			$(CP) $$FILE $(HDERINST)/ ; \
 		done \
 	fi
@@ -125,8 +136,9 @@ install		:	all
 			$(MKDIR) $(HDERINST2) ; \
 		fi ; \
 		for FILE in `echo $(HDER2)` ; do \
-			echo $(CP) $$FILE $(HDERINST2)/ ; \
+			echo $(RM) $(HDERINST2)/$$FILE ; \
 			$(RM) $(HDERINST2)/$$FILE ; \
+			echo $(CP) $$FILE $(HDERINST2)/ ; \
 			$(CP) $$FILE $(HDERINST2)/ ; \
 		done \
 	fi
@@ -137,8 +149,9 @@ install		:	all
 			$(MKDIR) $(DFTHDERINST) ; \
 		fi ; \
 		for FILE in `echo $(DFTHDER)` ; do \
-			echo $(CP) $$FILE $(DFTHDERINST)/ ; \
+			echo $(RM) $(DFTHDERINST)/$$FILE ; \
 			$(RM) $(DFTHDERINST)/$$FILE ; \
+			echo $(CP) $$FILE $(DFTHDERINST)/ ; \
 			$(CP) $$FILE $(DFTHDERINST)/ ; \
 		done \
 	fi
