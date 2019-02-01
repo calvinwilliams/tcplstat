@@ -461,6 +461,7 @@ void DestroyTcplSessionTree( struct TcplStatEnv *p_tcpl_stat_env );
 char *memndup( const char *s, size_t n );
 char *memistr2_region( char *p_curr , char *find , char *end , unsigned char binary_mode );
 int LengthUtilEndOfText( char *p_curr , char *end );
+void ReplaceCharInString( char *str , int str_len , char src , char dst );
 char *ConvDateTimeHumanReadable( time_t tt );
 int DumpBuffer( FILE *fp , char *indentation , int buf_len , void *buf );
 

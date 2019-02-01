@@ -18,6 +18,8 @@ static char *FindSql( char *packet_data_intercepted , UINT32 packet_data_len_int
 	p1 = memistr2_region( packet_data_intercepted , "SELECT" , end , 1 ) ;
 	if( p1 )
 	{
+		/* 为了抓到"select function();" */
+		/*
 		p2 = memistr2_region( p1+6 , "FROM" , end , 0 ) ;
 		if( p2 )
 		{
@@ -25,6 +27,10 @@ static char *FindSql( char *packet_data_intercepted , UINT32 packet_data_len_int
 			(*p_sql_len) += p2-p1 + 4 ;
 			return p1;
 		}
+		*/
+		(*p_sql_len) = LengthUtilEndOfText( p1+6 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
 	}
 	
 	p1 = memistr2_region( packet_data_intercepted , "UPDATE" , end , 1 ) ;
@@ -61,6 +67,78 @@ static char *FindSql( char *packet_data_intercepted , UINT32 packet_data_len_int
 			(*p_sql_len) += p2-p1 + 4 ;
 			return p1;
 		}
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "CREATE" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+6 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "DROP" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+4 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "ALTER" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+5 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "BEGIN" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+5 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "COMMIT" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+6 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "ROLLBACK" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+8 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "GRANT" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+5 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "TRUNCATE" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+8 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
+	}
+	
+	p1 = memistr2_region( packet_data_intercepted , "EXPLAIN" , end , 1 ) ;
+	if( p1 )
+	{
+		(*p_sql_len) = LengthUtilEndOfText( p1+7 , end ) ;
+		(*p_sql_len) += 6 ;
+		return p1;
 	}
 	
 	return 0;
@@ -238,6 +316,8 @@ int AddTcpPacket( struct TcplStatEnv *p_env , struct TcplSession *p_tcpl_session
 			p_tcpl_session->sql = FindSql( p_tcpl_packet->packet_data_intercepted , p_tcpl_packet->packet_data_len_intercepted , & (p_tcpl_session->sql_len) ) ;
 			if( p_tcpl_session->sql )
 			{
+				ReplaceCharInString( p_tcpl_session->sql , p_tcpl_session->sql_len , '\n' , ' ' );
+				
 				if( p_env->cmd_line_para.output_debug )
 				{
 					fprintf( p_env->fp , "q | %s.%06ld | %.*s\n"

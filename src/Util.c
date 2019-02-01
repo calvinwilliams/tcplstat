@@ -83,6 +83,21 @@ int LengthUtilEndOfText( char *p_curr , char *end )
 	return p-p_curr+1;
 }
 
+/* ÔÚ×Ö·û´®ÖÐ¸²¸Ç×Ö·û */
+void ReplaceCharInString( char *str , int str_len , char src , char dst )
+{
+	char	*p = NULL ;
+	int	n ;
+	
+	for( p = str , n = 0 ; n < str_len ; p++ , n++ )
+	{
+		if( (*p) == src )
+			(*p) = dst ;
+	}
+	
+	return;
+}
+
 char *ConvDateTimeHumanReadable( time_t tt )
 {
 	struct tm	tm ;
